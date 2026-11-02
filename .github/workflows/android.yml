@@ -8,10 +8,11 @@ name: Android Build
 # create the GitHub Release (the APK is the only file attached to it).
 
 on:
-  # pushing a tag like v1.0.0-mobile builds the APK and publishes the release automatically
+  # pushing a tag named MobilePort (or v1.0.0-mobile) builds the APK and publishes the release automatically
   push:
     tags:
       - "v*-mobile"
+      - "MobilePort"
   workflow_dispatch:
     inputs:
       tag_name:
