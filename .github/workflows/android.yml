@@ -99,6 +99,12 @@ jobs:
           haxelib run lime config JAVA_HOME "$JAVA_HOME"
           haxelib run lime config ANDROID_SETUP true
 
+      # This Lime fork does not ship prebuilt Android native libraries (liblime-*.so), so build them here.
+      - name: Rebuild Lime native libraries (armv7 + arm64)
+        run: |
+          haxelib run lime rebuild android -armv7 -arm64 -release
+          ls -la .haxelib/lime/git/ndll/Android/
+
       # The APK must be signed or Android refuses to install it.
       # Add the repository secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS to keep the SAME
       # signature between releases (needed to update an installed app). Without them a new key is made for this build.
