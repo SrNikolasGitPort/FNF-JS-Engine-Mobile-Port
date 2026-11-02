@@ -39,7 +39,7 @@ env:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
 
     steps:
@@ -54,15 +54,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Android NDK
+      # ubuntu-24.04 runners ship with the Android SDK and NDK already installed
+      - name: Locate Android SDK and NDK
         id: ndk
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r27c
-          link-to-sdk: true
+        run: |
+          echo "SDK: $ANDROID_HOME"
+          echo "NDK: $ANDROID_NDK_LATEST_HOME"
+          ls "$ANDROID_HOME/ndk" || true
+          test -d "$ANDROID_NDK_LATEST_HOME"
+          echo "ndk-path=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_OUTPUT"
 
       - name: Restore native build cache
         uses: actions/cache/restore@v4
