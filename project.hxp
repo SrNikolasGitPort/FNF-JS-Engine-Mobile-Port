@@ -262,8 +262,9 @@ class Project extends HXProject
 	 */
 	function configureAndroid()
 	{
-		// minSdk 21 = Android 5.0, the lowest that lime/SDL support.
-		this.config.set("android.minimum-sdk-version", 21);
+		// minSdk 23 = Android 6.0. The prebuilt LuaJIT libraries use stdin/stdout/stderr as real symbols,
+		// which only exist in the system libc from API 23 on (linking for 21 fails with "undefined symbol: stdin").
+		this.config.set("android.minimum-sdk-version", 23);
 		this.config.set("android.target-sdk-version", 34);
 		this.config.set("android.install-location", "auto");
 

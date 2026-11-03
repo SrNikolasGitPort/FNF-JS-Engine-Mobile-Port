@@ -5,7 +5,7 @@
 2. Install it (allow "install unknown apps" for your browser/file manager if Android asks).
 3. First launch: the game copies its files out of the APK ("Preparing game files"). This only happens the first time and after an update.
 
-One APK works on every phone: it contains 32-bit (armeabi-v7a) and 64-bit (arm64-v8a) code, Android 5.0 or newer.
+One APK works on every phone: it contains 32-bit (armeabi-v7a) and 64-bit (arm64-v8a) code, Android 6.0 or newer.
 
 ## Where are my files?
 `Android/data/com.JordanSantiago.JSEngine/files/`
