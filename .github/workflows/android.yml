@@ -141,23 +141,30 @@ jobs:
             -certificate-path="$KEYSTORE" -certificate-password="$PASS" \
             -certificate-alias="$ALIAS" -certificate-alias-password="$PASS" > build.log 2>&1 &
           BUILD_PID=$!
-          ( tail -n +1 -f build.log & echo $! > tail.pid ) > /dev/null 2>&1
           while kill -0 $BUILD_PID 2>/dev/null; do
             if grep -qE "error: |Error:" build.log; then
               sleep 20  # let the compiler print the rest of the message
-              echo "::error::C++ compile error detected, stopping the build"
               pkill -P $BUILD_PID 2>/dev/null; pkill -f "haxelib run lime build" 2>/dev/null
               pkill -f hxcpp 2>/dev/null; pkill -f clang 2>/dev/null; pkill -f neko 2>/dev/null
-              grep -nE "error: |Error: " build.log | head -40
-              kill $(cat tail.pid) 2>/dev/null
+              echo "::error::C++ compile error detected, stopping the build"
+              echo "===== ERRORS ====="
+              grep -nE -B2 -A12 "error: |Error:" build.log | cut -c1-300 | head -150
               exit 1
             fi
             sleep 10
           done
           wait $BUILD_PID
           STATUS=$?
-          kill $(cat tail.pid) 2>/dev/null
+          if [ $STATUS -ne 0 ]; then echo "===== LAST LINES ====="; tail -n 80 build.log | cut -c1-300; fi
           exit $STATUS
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
 
       - name: Find the APK
         run: |
