@@ -28,6 +28,11 @@ package utils;
 #include <mach-o/arch.h>
 #include <sys/utsname.h>
 ')
+#else
+// Android (and any other POSIX target): getArchNative() uses uname()
+@:cppFileCode('
+#include <sys/utsname.h>
+')
 #end
 #end
 @:allow(utils.PlatformUtil)
