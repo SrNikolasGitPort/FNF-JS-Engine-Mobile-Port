@@ -57,15 +57,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # ubuntu-24.04 runners ship with the Android SDK and NDK already installed
-      - name: Locate Android SDK and NDK
+      # The runner's default NDK (r30) is too new for this old Lime fork (OpenAL fails to compile),
+      # so pin NDK r27, which is what the toolchain was made for.
+      - name: Install Android NDK r27
         id: ndk
         run: |
-          echo "SDK: $ANDROID_HOME"
-          echo "NDK: $ANDROID_NDK_LATEST_HOME"
-          ls "$ANDROID_HOME/ndk" || true
-          test -d "$ANDROID_NDK_LATEST_HOME"
-          echo "ndk-path=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_OUTPUT"
+          NDK_VER=27.2.12479018
+          if [ ! -d "$ANDROID_HOME/ndk/$NDK_VER" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VER" > /dev/null
+          fi
+          ls "$ANDROID_HOME/ndk"
+          echo "ndk-path=$ANDROID_HOME/ndk/$NDK_VER" >> "$GITHUB_OUTPUT"
 
       - name: Restore native build cache
         uses: actions/cache/restore@v4
@@ -101,6 +103,7 @@ jobs:
 
       # This Lime fork does not ship prebuilt Android native libraries (liblime-*.so), so build them here.
       - name: Rebuild Lime native libraries (armv7 + arm64)
+        timeout-minutes: 60
         run: |
           haxelib run lime rebuild android -armv7 -arm64 -release
           ls -la .haxelib/lime/git/ndll/Android/
@@ -129,6 +132,7 @@ jobs:
           echo "KEYSTORE=$RUNNER_TEMP/sign/release.jks" >> $GITHUB_ENV
 
       - name: Build APK (armv7 + arm64)
+        timeout-minutes: 90
         run: |
           rm -f assets/preload/gameRenders/renderlol.bat
           haxelib run lime build android -armv7 -arm64 -release -D GITHUB_BUILD \
