@@ -265,7 +265,8 @@ class Project extends HXProject
 		// minSdk 23 = Android 6.0. The prebuilt LuaJIT libraries use stdin/stdout/stderr as real symbols,
 		// which only exist in the system libc from API 23 on (linking for 21 fails with "undefined symbol: stdin").
 		this.config.set("android.minimum-sdk-version", 23);
-		this.config.set("android.target-sdk-version", 34);
+		// compileSdk follows this value; current androidx libraries require 35 or newer
+		this.config.set("android.target-sdk-version", 35);
 		this.config.set("android.install-location", "auto");
 
 		// The game stores everything inside the app's own external folder

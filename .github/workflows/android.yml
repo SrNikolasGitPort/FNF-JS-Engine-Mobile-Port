@@ -138,8 +138,8 @@ jobs:
           # hxcpp can hang forever after a C++ compile error, so watch the log and stop at the first one
           set +e
           haxelib run lime build android -armv7 -arm64 -release -D GITHUB_BUILD \
-            -certificate-path="$KEYSTORE" -certificate-password="$PASS" \
-            -certificate-alias="$ALIAS" -certificate-alias-password="$PASS" > build.log 2>&1 &
+            --certificate-path="$KEYSTORE" --certificate-password="$PASS" \
+            --certificate-alias="$ALIAS" --certificate-alias-password="$PASS" > build.log 2>&1 &
           BUILD_PID=$!
           while kill -0 $BUILD_PID 2>/dev/null; do
             if grep -qE "error: |Error:" build.log; then
