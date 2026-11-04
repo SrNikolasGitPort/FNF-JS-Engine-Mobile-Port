@@ -6,6 +6,7 @@ import flixel.FlxState;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import mobile.backend.AssetExtractor;
+import mobile.backend.StorageUtil;
 
 /**
  * First state on phones. Copies the game files out of the APK when needed (first launch / new build),
@@ -22,6 +23,9 @@ class MobileInitState extends FlxState
 	var title:FlxText;
 	var info:FlxText;
 	var skipFrames:Int = 2; // let one frame draw before the heavy work starts
+	var waitingForAccess:Bool = false;
+	var accessTimer:Float = 0;
+	var asked:Bool = false;
 
 	override function create():Void
 	{
@@ -29,19 +33,24 @@ class MobileInitState extends FlxState
 		FlxG.autoPause = false;
 		bgColor = 0xFF101018;
 
-		if (!AssetExtractor.needed())
+		waitingForAccess = !StorageUtil.hasAccess();
+		if (!waitingForAccess)
+			StorageUtil.setup(true);
+
+		if (!waitingForAccess && !AssetExtractor.needed())
 		{
 			FlxG.switchState(() -> new InitState());
 			return;
 		}
 
-		extractor = new AssetExtractor();
+		if (!waitingForAccess)
+			extractor = new AssetExtractor();
 
-		title = new FlxText(0, 250, FlxG.width, "Preparing game files", 40);
+		title = new FlxText(0, 250, FlxG.width, waitingForAccess ? "Storage access needed" : "Preparing game files", 40);
 		title.alignment = CENTER;
 		add(title);
 
-		info = new FlxText(60, 480, FlxG.width - 120, "This only happens the first time\n(and after an update).", 24);
+		info = new FlxText(60, 480, FlxG.width - 120, waitingForAccess ? "The game keeps its files in the\n.JSEMobile folder (assets and mods).\nAllow access to files, then come back.\n\nTap the screen to open the permission screen again." : "This only happens the first time\n(and after an update).", 24);
 		info.alignment = CENTER;
 		info.color = 0xFFAAAAAA;
 		add(info);
@@ -57,6 +66,34 @@ class MobileInitState extends FlxState
 	override function update(elapsed:Float):Void
 	{
 		super.update(elapsed);
+
+		if (waitingForAccess)
+		{
+			accessTimer += elapsed;
+			if (!asked && accessTimer > 0.5)
+			{
+				asked = true;
+				StorageUtil.requestAccess();
+			}
+			else if (FlxG.mouse.justPressed || FlxG.touches.justStarted().length > 0)
+				StorageUtil.requestAccess();
+
+			if (asked && accessTimer > 1 && StorageUtil.hasAccess())
+			{
+				waitingForAccess = false;
+				StorageUtil.setup(true);
+				if (!AssetExtractor.needed())
+				{
+					FlxG.switchState(() -> new InitState());
+					return;
+				}
+				extractor = new AssetExtractor();
+				title.text = "Preparing game files";
+				info.text = "This only happens the first time\n(and after an update).";
+			}
+			return;
+		}
+
 		if (extractor == null)
 			return;
 

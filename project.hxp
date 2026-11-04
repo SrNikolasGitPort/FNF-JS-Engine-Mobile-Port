@@ -269,10 +269,9 @@ class Project extends HXProject
 		this.config.set("android.target-sdk-version", 35);
 		this.config.set("android.install-location", "auto");
 
-		// The game stores everything inside the app's own external folder
-		// (Android/data/<package>/files), so no storage permission is needed.
-		// Only the permissions that are really used stay in the manifest.
-		for (permission in ["android.permission.WAKE_LOCK", "android.permission.VIBRATE", "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"])
+		// The game keeps its files in /storage/emulated/0/.JSEMobile (assets + mods), which needs storage access:
+		// All files access on Android 11+, read/write on Android 6 to 10 (the manifest keeps legacy storage on).
+		for (permission in ["android.permission.WAKE_LOCK", "android.permission.VIBRATE", "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.MANAGE_EXTERNAL_STORAGE"])
 			this.config.push("android.permission", permission);
 	}
 

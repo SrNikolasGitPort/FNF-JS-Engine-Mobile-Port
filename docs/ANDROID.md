@@ -3,18 +3,18 @@
 ## Install
 1. Download `FNF-JS-Engine-Mobile-Port.apk` from the **Releases** page.
 2. Install it (allow "install unknown apps" for your browser/file manager if Android asks).
-3. First launch: the game copies its files out of the APK ("Preparing game files"). This only happens the first time and after an update.
+3. First launch: the game asks for access to files (needed to create the `.JSEMobile` folder), then copies its files out of the APK ("Preparing game files"). This only happens the first time and after an update.
 
 One APK works on every phone: it contains 32-bit (armeabi-v7a) and 64-bit (arm64-v8a) code, Android 6.0 or newer.
 
 ## Where are my files?
-`Android/data/com.JordanSantiago.JSEngine/files/`
+`/storage/emulated/0/.JSEMobile/` (hidden folder in the phone's main storage; turn on "show hidden files" in your file manager)
 
+- `assets/` – game files (extracted automatically, do not edit)
 - `mods/` – drop your mods here (same folders as the desktop version)
 - `crash/` – crash logs
-- `assets/` – game files (extracted automatically, do not edit)
 
-On Android 11+ the `Android/data` folder is hidden from some file managers; use the one that comes with the system ("Files"), or plug the phone into a PC.
+Only the shared storage is used. If you deny the permission the game waits on the permission screen; tap the screen to open it again.
 
 ## Controls
 - **Menus:** D-pad (move), **A** (accept), **B** (back). Some menus add **X / Y / C** (Freeplay: X = gameplay changers, Y = reset score, C = song preview; Main Menu: X = editors).

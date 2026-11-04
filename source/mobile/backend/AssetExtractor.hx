@@ -14,6 +14,7 @@ import sys.io.File;
  * did not change are skipped, so an update only rewrites what is different. Mods are never deleted.
  */
 @:access(lime.utils.Assets)
+@:access(lime.utils.AssetLibrary)
 class AssetExtractor
 {
 	static inline var STAMP_FILE:String = '.assets_stamp';
@@ -30,7 +31,7 @@ class AssetExtractor
 	{
 		for (name => library in LimeAssets.libraries)
 			for (id in library.list(null))
-				if (shouldExtract(id))
+				if (shouldExtract(id) && !library.classTypes.exists(id))
 					queue.push({library: library, id: id});
 		total = queue.length;
 	}
@@ -90,7 +91,12 @@ class AssetExtractor
 
 	static function copy(library:AssetLibrary, id:String):Void
 	{
-		final bytes = library.getBytes(id);
+		// a file that cannot be read as bytes (embedded / unsupported entry) is skipped, not fatal
+		var bytes:haxe.io.Bytes = null;
+		try
+			bytes = library.getBytes(id)
+		catch (e)
+			return;
 		if (bytes == null)
 			return;
 
