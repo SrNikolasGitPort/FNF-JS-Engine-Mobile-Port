@@ -87,6 +87,7 @@ class Main extends Sprite
     #if mobile
     // must come first: moves the working directory to the game folder on the phone (see StorageUtil)
     StorageUtil.init();
+    mobile.backend.AndroidLibcShims.init();
     #end
     CrashHandler.init();
     #if (cpp && windows)
