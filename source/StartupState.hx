@@ -60,6 +60,9 @@ class StartupState extends MusicBeatState
 
 	override public function create():Void
 	{
+		#if mobile
+		mobilePadMode = NONE; // the whole screen is the skip button
+		#end
 		if (DateUtils.isChristmas()) //Only triggers if the date is between 12/16 and 12/31
 		{
 			canChristmas = true;
@@ -80,7 +83,7 @@ class StartupState extends MusicBeatState
 		logo.active = true;
 		add(logo);
 
-		skipTxt = new FlxText(0, FlxG.height, 0, 'Press ENTER To Skip', 16);
+		skipTxt = new FlxText(0, FlxG.height, 0, #if mobile 'Tap To Skip' #else 'Press ENTER To Skip' #end, 16);
 		skipTxt.setFormat("Comic Sans MS Bold", 18, FlxColor.WHITE, LEFT, OUTLINE, FlxColor.BLACK);
 		skipTxt.borderSize = 1.5;
 		skipTxt.antialiasing = true;
@@ -188,7 +191,7 @@ class StartupState extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
-		if (FlxG.keys.justPressed.ENTER) FlxG.switchState(TitleState.new);
+		if (FlxG.keys.justPressed.ENTER #if mobile || FlxG.touches.justStarted().length > 0 || controls.BACK #end) FlxG.switchState(TitleState.new);
 		super.update(elapsed);
 	}
 }

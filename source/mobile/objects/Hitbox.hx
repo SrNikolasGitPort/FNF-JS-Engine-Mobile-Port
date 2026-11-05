@@ -25,8 +25,9 @@ class Hitbox extends FlxTypedGroup<TouchButton>
 	 * @param style     0 = gradient, 1 = flat, 2 = outline only
 	 * @param bottomOnly true = lanes cover the lower part of the screen only, false = the whole screen
 	 * @param extra     adds the Bot Energy button
+	 * @param hideHints never draw the lanes (not even when pressed); they keep working
 	 */
-	public function new(alpha:Float, style:Int, bottomOnly:Bool, extra:Bool)
+	public function new(alpha:Float, style:Int, bottomOnly:Bool, extra:Bool, hideHints:Bool = false)
 	{
 		super();
 
@@ -39,8 +40,8 @@ class Hitbox extends FlxTypedGroup<TouchButton>
 		{
 			final lane = new TouchButton(i * laneW, top, ids[i], MobileGraphics.hitboxLane(laneW, laneH, COLORS[i], style));
 			lane.pressedScale = 1; // lanes should not shrink, they tile the screen
-			lane.pressedAlpha = Math.min(1, alpha + 0.45);
-			lane.setIdleAlpha(alpha);
+			lane.pressedAlpha = hideHints ? 0 : Math.min(1, alpha + 0.45);
+			lane.setIdleAlpha(hideHints ? 0 : alpha);
 			lane.antialiasing = false;
 			lanes.push(lane);
 			add(lane);

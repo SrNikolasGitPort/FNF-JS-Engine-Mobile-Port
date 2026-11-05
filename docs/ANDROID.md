@@ -17,10 +17,13 @@ One APK works on every phone: it contains 32-bit (armeabi-v7a) and 64-bit (arm64
 Only the shared storage is used. If you deny the permission the game waits on the permission screen; tap the screen to open it again.
 
 ## Controls
-- **Menus:** D-pad (move), **A** (accept), **B** (back). Some menus add **X / Y / C** (Freeplay: X = gameplay changers, Y = reset score, C = song preview; Main Menu: X = editors).
+Every screen only shows the buttons it uses, with a caption on each one.
+- **Intro and title screen:** no buttons, tap anywhere to skip / start.
+- **Menus:** D-pad, **A** (OK) and **B** (Back). The Main Menu also has an **Editors** button; Story Mode and Freeplay add **Changers** (X), **Reset** (Y) and, in Freeplay, **Listen** (C); Options, Achievements and Note Offset have **Reset**.
 - **Songs:** the screen is split into four lanes (the hitbox). Hold a lane for sustain notes, slide a finger between lanes, use as many fingers as you want. Top-right button = pause.
+- **Editors:** a grid of keyboard keys (Space, W/A/S/D, arrows, Enter, Esc, Tab, Ctrl/Shift/Alt...) is shown at the bottom right, different for each editor. Ctrl / Shift / Alt are sticky: tap once to hold, again to release. The **Keys** tab hides/shows the grid. The Android Back gesture works as Esc.
 - The Android **Back** button/gesture goes back in menus and pauses in songs.
-- Opening the pause menu, game over, or any cutscene swaps the lanes for the menu buttons automatically.
+- Opening the pause menu, game over, or any cutscene swaps the lanes for the menu buttons automatically. Hold a finger on a video cutscene to skip it.
 
 ## Mobile Options (Options → Mobile Options)
 | Option | What it does |
@@ -29,11 +32,12 @@ Only the shared storage is used. If you deny the permission the game waits on th
 | Hitbox Opacity | how visible the lanes are (0% = invisible but still working) |
 | Hitbox Style | Gradient / Flat / Outline |
 | Hitbox Position | Full height or Bottom only |
+| Hide Hitbox Hints | never draw the lanes (they keep working) |
 | Extra Button | Bot Energy button during songs |
 | Vibration | short vibration on every press |
 | Screen | Ratio (keeps 16:9) or Fill (stretch to the display) |
 
-A live preview of the hitbox is drawn behind the menu.
+A small hitbox preview is shown in the top-right corner while you change the options.
 
 ## Building it yourself
 Run the **Android Build** workflow (Actions tab → *Run workflow*). It builds the APK with both CPU types and, if "publish" is ticked, creates the GitHub Release with only the APK attached.
@@ -47,6 +51,6 @@ haxelib run lime build android -armv7 -arm64 -release
 ```
 
 ## Known limits (V1)
-- The chart/character/other editors open and respond to touch, but many of their shortcuts are keyboard-only.
+- The editors are made for mouse and keyboard: touch drives the mouse part and the on-screen key grid covers the shortcuts, but they are still cramped on a small screen.
 - Text boxes use the on-screen keyboard.
 - Discord Rich Presence and native file dialogs are desktop-only.

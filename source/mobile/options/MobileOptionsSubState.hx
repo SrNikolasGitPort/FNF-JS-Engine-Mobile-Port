@@ -1,7 +1,7 @@
 package mobile.options;
 
 import mobile.MobileControls;
-import mobile.objects.Hitbox;
+import mobile.objects.HitboxPreview;
 import options.BaseOptionsMenu;
 import options.Option;
 
@@ -11,7 +11,7 @@ import options.Option;
  */
 class MobileOptionsSubState extends BaseOptionsMenu
 {
-	var preview:Hitbox;
+	var preview:HitboxPreview;
 
 	public function new()
 	{
@@ -43,6 +43,11 @@ class MobileOptionsSubState extends BaseOptionsMenu
 
 		option = new Option('Hitbox Position:', 'Full uses the whole screen height,\nBottom only the lower part (fewer accidental taps).', 'hitboxPosition',
 			'string', 'Full', ['Full', 'Bottom']);
+		option.onChange = refresh;
+		addOption(option);
+
+		option = new Option('Hide Hitbox Hints', 'Never draws the four lanes while playing (not even when you touch them).\nThey still work, you just play on the note strums.', 'hideHitboxHints',
+			'bool', false);
 		option.onChange = refresh;
 		addOption(option);
 
@@ -86,20 +91,15 @@ class MobileOptionsSubState extends BaseOptionsMenu
 			preview.destroy();
 		}
 
-		preview = new Hitbox(ClientPrefs.hitboxAlpha, switch (ClientPrefs.hitboxStyle)
+		// a small framed picture in the top-right corner (the old full-screen preview made the menu hard to read)
+		preview = new HitboxPreview(1280 - 16 - 240, 24, 240, 135, ClientPrefs.hitboxAlpha, switch (ClientPrefs.hitboxStyle)
 		{
 			case 'Flat': 1;
 			case 'Outline': 2;
 			default: 0;
-		}, ClientPrefs.hitboxPosition == 'Bottom', ClientPrefs.mobileExtraButtons);
-
-		// look only: touches must keep scrolling the menu, not "hit" lanes
-		for (button in preview.members)
-			if (button != null)
-				button.touchEnabled = false;
+		}, ClientPrefs.hitboxPosition == 'Bottom', ClientPrefs.hideHitboxHints, ClientPrefs.mobileExtraButtons);
 		preview.assignCamera(controls.camera);
-		// behind the menu text but above the background
-		insert(1, preview);
+		add(preview);
 	}
 
 	override function destroy():Void

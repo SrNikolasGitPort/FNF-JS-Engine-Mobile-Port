@@ -52,6 +52,30 @@ class MobileGraphics
 		});
 	}
 
+	/** A wide rounded button (the caption is drawn on top by `TouchButton.setLabel`). */
+	public static function pill(w:Int, h:Int, color:Int):FlxGraphic
+	{
+		return cached('mobile_pill_${w}_${h}_$color', () ->
+		{
+			final bmp = new BitmapData(w, h, true, 0);
+			final px = new Canvas(w, h);
+			final r = h * .5;
+			px.roundRect(h * .04, h * .04, w - h * .08, h * .92, r, color, 0.65);
+			px.roundRect(h * .04, h * .04, w - h * .08, h * .92, r, 0xFFFFFFFF, 0.0);
+			px.flush(bmp);
+			// thin light border
+			bmp.lock();
+			final c = (0xFF << 24) | 0xFFFFFF;
+			for (x in Std.int(r)...Std.int(w - r))
+			{
+				bmp.setPixel32(x, Std.int(h * .05), c);
+				bmp.setPixel32(x, Std.int(h * .95), c);
+			}
+			bmp.unlock();
+			return bmp;
+		});
+	}
+
 	/** Small rounded "II" pause button. */
 	public static function pauseButton(size:Int):FlxGraphic
 	{

@@ -51,7 +51,7 @@ class FreeplayState extends MusicBeatState
   override function create()
   {
     #if mobile
-    mobilePadMode = FULL_EXTRA;
+    mobilePadMode = FREEPLAY;
     #end
     Paths.clearStoredMemory();
     Paths.clearUnusedMemory();

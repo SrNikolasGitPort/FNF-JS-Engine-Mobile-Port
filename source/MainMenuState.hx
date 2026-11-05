@@ -55,7 +55,7 @@ class MainMenuState extends MusicBeatState
   override function create()
   {
     #if mobile
-    mobilePadMode = FULL_EXTRA;
+    mobilePadMode = MAIN;
     #end
     MusicBeatState.windowNameSuffix = " - Main Menu";
     Paths.clearStoredMemory();

@@ -25,6 +25,9 @@ class AchievementsMenuState extends MusicBeatState
 
 	override function create()
 	{
+#if mobile
+mobilePadMode = RESETTABLE;
+#end
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 

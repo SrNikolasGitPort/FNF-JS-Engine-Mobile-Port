@@ -37,7 +37,7 @@ class StoryMenuState extends MusicBeatState
   override function create()
   {
     #if mobile
-    mobilePadMode = FULL_EXTRA;
+    mobilePadMode = STORY;
     #end
     Paths.clearStoredMemory();
 

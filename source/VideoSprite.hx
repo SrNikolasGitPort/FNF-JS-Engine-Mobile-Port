@@ -99,7 +99,7 @@ class VideoSprite extends FlxSpriteGroup
   {
     if (canSkip)
     {
-      if (Controls.instance != null && Controls.instance.ACCEPT_P)
+      if ((Controls.instance != null && Controls.instance.ACCEPT_P) #if mobile || FlxG.touches.list.length > 0 #end) // on phones: hold a finger anywhere
       {
         holdingTime = Math.max(0, Math.min(_timeToSkip, holdingTime + elapsed));
       }

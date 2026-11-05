@@ -5,6 +5,7 @@ import flixel.FlxState;
 import flixel.util.FlxColor;
 import mobile.MobileInput;
 import mobile.objects.Hitbox;
+import mobile.objects.KeyPad;
 import mobile.objects.VirtualPad;
 
 /**
@@ -16,6 +17,7 @@ import mobile.objects.VirtualPad;
  *  - a state with a hitbox shows the hitbox while playing, and swaps to the pad while any substate
  *    (pause menu, game over, options...) or a cutscene is on screen.
  */
+@:access(flixel.FlxGame)
 class MobileControls
 {
 	/** Controls of the state that is on screen right now (null on non-touch builds or before the first state). */
@@ -24,6 +26,7 @@ class MobileControls
 	public var camera(default, null):FlxCamera;
 	public var pad(default, null):VirtualPad;
 	public var hitbox(default, null):Hitbox;
+	public var keypad(default, null):KeyPad;
 
 	/** Set by gameplay while a cutscene / dialogue is running: shows the pad instead of the hitbox. */
 	public var cutsceneMode:Bool = false;
@@ -59,6 +62,10 @@ class MobileControls
 		attach(state, padMode, withHitbox);
 	}
 
+	/** Editors have no pad: they get a grid of keyboard keys instead (see `KeyPad`). */
+	static function keyPresetOf(state:FlxState):Null<Array<mobile.objects.KeyPad.KeySpec>>
+		return KeyPad.presetFor(Type.getClassName(Type.getClass(state)));
+
 	/**
 	 * Creates the controls for `state` and adds them to it.
 	 * Call after the state has built its own cameras (MusicBeatState does it from `createPost`).
@@ -68,7 +75,8 @@ class MobileControls
 		detach();
 		MobileInput.init();
 		MobileInput.vibrate = ClientPrefs.mobileVibration;
-		instance = new MobileControls(state, padMode, withHitbox);
+		final keys = keyPresetOf(state);
+		instance = new MobileControls(state, keys != null ? NONE : padMode, withHitbox, keys);
 		return instance;
 	}
 
@@ -79,13 +87,18 @@ class MobileControls
 		instance = null;
 	}
 
-	function new(state:FlxState, padMode:PadMode, withHitbox:Bool)
+	function new(state:FlxState, padMode:PadMode, withHitbox:Bool, ?keys:Array<mobile.objects.KeyPad.KeySpec>)
 	{
 		this.state = state;
 
 		camera = new FlxCamera();
 		camera.bgColor = FlxColor.TRANSPARENT;
 		FlxG.cameras.add(camera, false);
+		// Many menus (options, pause...) draw on `FlxG.cameras.list[last]`. If that was this camera their
+		// backgrounds would be drawn over the buttons, so it goes to the front of the list. It is still the
+		// top layer on screen: that depends on the display order, which `onPreUpdate` keeps.
+		FlxG.cameras.list.remove(camera);
+		FlxG.cameras.list.unshift(camera);
 
 		if (padMode != NONE || withHitbox)
 		{
@@ -96,9 +109,20 @@ class MobileControls
 
 		if (withHitbox)
 		{
-			hitbox = new Hitbox(ClientPrefs.hitboxAlpha, hitboxStyle(), ClientPrefs.hitboxPosition == 'Bottom', ClientPrefs.mobileExtraButtons);
+			hitbox = new Hitbox(ClientPrefs.hitboxAlpha, hitboxStyle(), ClientPrefs.hitboxPosition == 'Bottom', ClientPrefs.mobileExtraButtons,
+				ClientPrefs.hideHitboxHints);
 			hitbox.assignCamera(camera);
 			state.add(hitbox);
+			// the chart editor's test play ends with Esc, not with the pause control
+			if (Std.isOfType(state, editors.EditorPlayState))
+				MobileInput.bindKey(hitbox.pauseButton, flixel.input.keyboard.FlxKey.ESCAPE);
+		}
+
+		if (keys != null)
+		{
+			keypad = new KeyPad(keys, Math.max(ClientPrefs.mobilePadAlpha, 0.45));
+			keypad.assignCamera(camera);
+			state.add(keypad);
 		}
 
 		FlxG.signals.preUpdate.add(onPreUpdate);
@@ -121,6 +145,12 @@ class MobileControls
 
 	function onPreUpdate():Void
 	{
+		// something that adds a camera after ours would be drawn over the buttons: keep ours on top
+		final game = FlxG.game;
+		final top = game.getChildIndex(game._inputContainer) - 1;
+		if (game.getChildIndex(camera.flashSprite) != top)
+			game.setChildIndex(camera.flashSprite, top);
+
 		if (hitbox == null)
 		{
 			if (pad != null && lastShowPad != true)
@@ -157,6 +187,8 @@ class MobileControls
 		// the objects are destroyed together with the state, the camera together with FlxG.cameras.reset()
 		pad = null;
 		hitbox = null;
+		keypad = null;
+		MobileInput.backIsEscape = false;
 		state = null;
 		camera = null;
 		MobileInput.releaseAll();

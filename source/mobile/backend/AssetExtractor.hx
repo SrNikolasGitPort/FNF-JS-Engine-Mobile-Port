@@ -52,7 +52,7 @@ class AssetExtractor
 	}
 
 	/** Extracts files until `budget` seconds have passed. Call every frame. */
-	public function step(budget:Float = 0.025):Void
+	public function step(budget:Float = 0.05):Void
 	{
 		if (finished || error != null)
 			return;

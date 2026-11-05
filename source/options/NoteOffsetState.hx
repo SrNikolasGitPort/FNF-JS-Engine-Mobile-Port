@@ -29,6 +29,9 @@ class NoteOffsetState extends MusicBeatState
 
   override public function create()
   {
+#if mobile
+mobilePadMode = RESETTABLE;
+#end
     // Cameras
     camGame = initPsychCamera();
     camHUD = new FlxCamera();

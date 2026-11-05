@@ -11,7 +11,7 @@ class InitState extends FlxState {
 
         // -- FLIXEL STUFF -- //
 
-        FlxG.game.focusLostFramerate = 60;
+        FlxG.game.focusLostFramerate = #if mobile 10 #else 60 #end; // in the background a phone should idle
 		FlxG.sound.muteKeys = TitleState.muteKeys;
 		FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
 		FlxG.sound.volumeUpKeys = TitleState.volumeUpKeys;

@@ -19,6 +19,9 @@ class OutdatedState extends MusicBeatState
 	var bg:FlxSprite;
 	override function create()
 	{
+#if mobile
+mobilePadMode = AB;
+#end
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 

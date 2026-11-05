@@ -53,7 +53,7 @@ class TitleState extends MusicBeatState
   override public function create():Void
   {
     #if mobile
-    mobilePadMode = A_ONLY;
+    mobilePadMode = NONE; // no buttons: tap anywhere
     #end
     Paths.clearStoredMemory();
     Paths.clearUnusedMemory();

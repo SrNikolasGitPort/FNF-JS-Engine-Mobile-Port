@@ -19,6 +19,9 @@ class ErrorState extends MusicBeatState
 	public var errorText:FlxText;
 	override function create()
 	{
+#if mobile
+mobilePadMode = AB;
+#end
 		final bg = new FlxSprite().loadGraphic(Paths.image('menuDesat', 'preload'));
 		bg.color = FlxColor.GRAY;
 		bg.antialiasing = ClientPrefs.globalAntialiasing;

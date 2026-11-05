@@ -10,6 +10,9 @@ class FlashingState extends MusicBeatState
 	var warnText:FlxText;
 	override function create()
 	{
+#if mobile
+mobilePadMode = AB;
+#end
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
@@ -20,12 +23,15 @@ class FlashingState extends MusicBeatState
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 
+		#if mobile
+		final accept = 'Tap A to disable them now or go to Options Menu.';
+		final ignore = 'Tap B to ignore this message.';
+		#else
+		final accept = 'Press ENTER to disable them now or go to Options Menu.';
+		final ignore = 'Press ESCAPE to ignore this message.';
+		#end
 		warnText = new FlxText(0, 0, FlxG.width,
-			"Hey, watch out!\n
-			This Mod contains some flashing lights!\n
-			Press ENTER to disable them now or go to Options Menu.\n
-			Press ESCAPE to ignore this message.\n
-			You've been warned!",
+			"Hey, watch out!\n\nThis Mod contains some flashing lights!\n\n" + accept + "\n\n" + ignore + "\n\nYou've been warned!",
 			32);
 		warnText.setFormat("VCR OSD Mono", 32, FlxColor.WHITE, CENTER);
 		warnText.screenCenter(Y);

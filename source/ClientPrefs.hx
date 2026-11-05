@@ -9,6 +9,7 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var hitboxAlpha:Float = 0.35; // opacity of the gameplay hitbox lanes
 	public static var hitboxStyle:String = 'Gradient'; // Gradient / Flat / Outline
 	public static var hitboxPosition:String = 'Full'; // Full / Bottom
+	public static var hideHitboxHints:Bool = false; // true = the lanes are never drawn (they still work)
 	public static var mobileVibration:Bool = false; // short vibration on every button press
 	public static var mobileExtraButtons:Bool = false; // shows the Bot Energy button in songs
 	public static var mobileScaleMode:String = 'Ratio'; // Ratio (keeps 16:9) / Fill (stretches to the whole screen)
@@ -39,7 +40,7 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var oppNoteSplashes:Bool = true;
 	public static var showNPS:Bool = true;
 	public static var showComboInfo:Bool = true;
-	public static var maxSplashLimit:Int = 16;
+	public static var maxSplashLimit:Int = #if mobile 8 #else 16 #end; // fewer note splashes alive at once on phones
 	public static var oppNoteAlpha:Float = 0.65;
 	public static var hideHud:Bool = false;
 	public static var tauntOnGo:Bool = true;
@@ -86,7 +87,8 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var lowQuality:Bool = false;
 	public static var globalAntialiasing:Bool = true;
 	public static var shaders:Bool = true;
-	public static var cacheOnGPU:Bool = false;
+	// phones: upload textures to the GPU and free the CPU copy (much less RAM, fewer out-of-memory closes)
+	public static var cacheOnGPU:Bool = #if mobile true #else false #end;
 	public static var dynamicSpawnTime:Bool = false;
 	public static var noteSpawnTime:Float = 1;
 	public static var resolution:String = '1280x720';

@@ -46,6 +46,10 @@ class MobileInput implements IFlxInputManager
 
 	static final inputs:Array<FlxInput<Int>> = [for (i in 0...(MobileButtonID.TOTAL : Int)) new FlxInput<Int>(i)];
 	static final down:Array<Bool> = [for (i in 0...(MobileButtonID.TOTAL : Int)) false];
+	/** ids from here on are handed out by `allocId` to keyboard-key buttons */
+	static var nextId:Int = MobileButtonID.TOTAL;
+	static final keyButtons:Array<TouchButton> = [];
+	static final keysDown:Map<Int, Bool> = [];
 	static final buttons:Array<TouchButton> = [];
 	static final claimed:Array<Bool> = [];
 	static final point:flixel.math.FlxPoint = flixel.math.FlxPoint.get();
@@ -73,6 +77,65 @@ class MobileInput implements IFlxInputManager
 	public static inline function justReleased(id:MobileButtonID):Bool
 		return inputs[id].justReleased;
 
+	static final freeIds:Array<Int> = [];
+
+	/** Gives an id back (its button was destroyed) so editors that are opened again and again do not grow the tables. */
+	public static function freeId(id:Int):Void
+	{
+		if (id >= (MobileButtonID.TOTAL : Int) && !freeIds.contains(id))
+		{
+			inputs[id].reset();
+			down[id] = false;
+			freeIds.push(id);
+		}
+	}
+
+	/** Reserves a new button id (used by key buttons, which are not part of `MobileButtonID`). */
+	public static function allocId():Int
+	{
+		if (freeIds.length > 0)
+			return freeIds.pop();
+		final id = nextId++;
+		inputs.push(new FlxInput<Int>(id));
+		down.push(false);
+		return id;
+	}
+
+	/** Makes `button` type `keyCode` on the virtual keyboard. */
+	public static function bindKey(button:TouchButton, keyCode:Int):Void
+	{
+		button.keyCode = keyCode;
+		if (!keyButtons.contains(button))
+			keyButtons.push(button);
+	}
+
+	/** Sends a real keyboard event, so `FlxG.keys` (and any text input) sees it like a physical key. */
+	static function sendKey(keyCode:Int, isDown:Bool):Void
+	{
+		if (keysDown.exists(keyCode) == isDown)
+			return; // already in that state
+		if (isDown)
+			keysDown.set(keyCode, true);
+		else
+			keysDown.remove(keyCode);
+		final type = isDown ? openfl.events.KeyboardEvent.KEY_DOWN : openfl.events.KeyboardEvent.KEY_UP;
+		FlxG.stage.dispatchEvent(new openfl.events.KeyboardEvent(type, true, false, 0, keyCode));
+	}
+
+	static final pendingUp:Array<Int> = [];
+
+	/** Editors listen to Esc, not to the Android Back gesture: while this is true, Back types Esc. */
+	public static var backIsEscape:Bool = false;
+
+	/** Releases every key that a button is holding down (state switch, focus lost...). */
+	static function releaseKeys():Void
+	{
+		for (code in [for (c in keysDown.keys()) c])
+			sendKey(code, false);
+		for (button in keyButtons)
+			button.latched = false;
+	}
+
 	public static function register(button:TouchButton):Void
 	{
 		if (buttons.contains(button))
@@ -85,10 +148,21 @@ class MobileInput implements IFlxInputManager
 	public static function unregister(button:TouchButton):Void
 	{
 		buttons.remove(button);
+		if (keyButtons.remove(button) && button.keyCode >= 0)
+		{
+			button.latched = false;
+			var stillUsed = false;
+			for (other in keyButtons)
+				if (other.keyCode == button.keyCode && (other.latched || inputs[other.id].pressed))
+					stillUsed = true;
+			if (!stillUsed)
+				sendKey(button.keyCode, false);
+		}
 	}
 
 	public static function releaseAll():Void
 	{
+		releaseKeys();
 		for (i in 0...inputs.length)
 		{
 			down[i] = false;
@@ -100,6 +174,17 @@ class MobileInput implements IFlxInputManager
 
 	public function update():Void
 	{
+		while (pendingUp.length > 0)
+			sendKey(pendingUp.pop(), false);
+
+		#if android
+		if (backIsEscape && FlxG.android.justPressed.BACK)
+		{
+			sendKey(flixel.input.keyboard.FlxKey.ESCAPE, true);
+			pendingUp.push(flixel.input.keyboard.FlxKey.ESCAPE); // released on the next frame
+		}
+		#end
+
 		for (i in 0...down.length)
 			down[i] = false;
 
@@ -150,6 +235,23 @@ class MobileInput implements IFlxInputManager
 			else if (!down[i] && input.pressed)
 				input.release();
 			input.update();
+		}
+
+		for (button in keyButtons)
+		{
+			final input = inputs[button.id];
+			if (button.sticky)
+			{
+				if (input.justPressed)
+				{
+					button.latched = !button.latched;
+					sendKey(button.keyCode, button.latched);
+				}
+			}
+			else if (input.justPressed)
+				sendKey(button.keyCode, true);
+			else if (input.justReleased)
+				sendKey(button.keyCode, false);
 		}
 
 		#if mobile

@@ -19,6 +19,9 @@ class CreditsState extends MusicBeatState
 
 	override function create()
 	{
+#if mobile
+mobilePadMode = LIST;
+#end
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
