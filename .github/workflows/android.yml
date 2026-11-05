@@ -40,6 +40,10 @@ env:
   RELEASE_NAME: FNF JS Engine Mobile Port
   APK_NAME: FNF-JS-Engine-Mobile-Port.apk
 
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
 jobs:
   build-apk:
     runs-on: ubuntu-24.04

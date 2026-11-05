@@ -848,7 +848,13 @@ class Paths
   // Loads mods.
   inline static public function mods(key:String = '')
   {
+    // Android: Lime/SDL open a RELATIVE path inside the APK's assets, so files that only exist in the
+    // mods folder (images, music, fonts, videos) would never be found. An absolute path goes to the real file.
+    #if android
+    return mobile.backend.StorageUtil.directory + 'mods/' + key;
+    #else
     return 'mods/' + key;
+    #end
   }
 
   // Loads fonts in mods/fonts.
@@ -938,7 +944,7 @@ class Paths
       var fileToCheck:String = mods(mod + '/' + key);
       if (FileSystem.exists(fileToCheck)) return fileToCheck;
     }
-    return 'mods/' + key;
+    return mods(key);
   }
 
   public static function getBackupFilePath(songPath:String, diff:String):String
