@@ -20,7 +20,7 @@ Only the shared storage is used. If you deny the permission the game waits on th
 Every screen only shows the buttons it uses, with a caption on each one.
 - **Intro and title screen:** no buttons, tap anywhere to skip / start.
 - **Menus:** D-pad, **A** (OK) and **B** (Back). The Main Menu also has an **Editors** button; Story Mode and Freeplay add **Changers** (X), **Reset** (Y) and, in Freeplay, **Listen** (C); Options, Achievements and Note Offset have **Reset**.
-- **Songs:** the screen is split into four lanes (the hitbox). Hold a lane for sustain notes, slide a finger between lanes, use as many fingers as you want. Top-right button = pause.
+- **Songs:** the screen is split into four lanes (the hitbox). Hold a lane for sustain notes, slide a finger between lanes, use as many fingers as you want. The pause button sits in the right black bar when your phone is wider than 16:9 (Bot Energy goes in the left one); on a 16:9 screen it stays in the top-right corner.
 - **Editors:** a grid of keyboard keys (Space, W/A/S/D, arrows, Enter, Esc, Tab, Ctrl/Shift/Alt...) is shown at the bottom right, different for each editor. Ctrl / Shift / Alt are sticky: tap once to hold, again to release. The **Keys** tab hides/shows the grid. The Android Back gesture works as Esc.
 - The Android **Back** button/gesture goes back in menus and pauses in songs.
 - Opening the pause menu, game over, or any cutscene swaps the lanes for the menu buttons automatically. Hold a finger on a video cutscene to skip it.
@@ -54,3 +54,7 @@ haxelib run lime build android -armv7 -arm64 -release
 - The editors are made for mouse and keyboard: touch drives the mouse part and the on-screen key grid covers the shortcuts, but they are still cramped on a small screen.
 - Text boxes use the on-screen keyboard.
 - Discord Rich Presence and native file dialogs are desktop-only.
+
+## Mods and scripts
+- Lua scripts and `runHaxeCode` work as on desktop. Common classes (Math, Std, FlxColor, FlxMath, FlxText, FlxTrail, Note, StrumNote...) are available to Haxe code without `addHaxeLibrary`.
+- Android file names are case sensitive. The game now finds a mod file even when its name is written with different upper/lower case than the file on disk (`Images/BF.png` vs `images/bf.png`).

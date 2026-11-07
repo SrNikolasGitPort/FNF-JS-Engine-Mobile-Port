@@ -17,6 +17,15 @@ import haxe.Exception;
 class HScript
 {
 	public static var parser:Parser = new Parser();
+
+	static final COMMON_CLASSES:Array<String> = [
+		'Math', 'Std', 'Type', 'Reflect', 'Lambda', 'DateTools', 'haxe.Json', 'sys.io.File', 'sys.FileSystem',
+		'flixel.util.FlxColor', 'flixel.math.FlxMath', 'flixel.math.FlxPoint', 'flixel.math.FlxRect', 'flixel.text.FlxText',
+		'flixel.group.FlxGroup', 'flixel.group.FlxSpriteGroup', 'flixel.FlxObject', 'flixel.FlxBasic', 'flixel.sound.FlxSound',
+		'flixel.util.FlxSort', 'flixel.util.FlxSpriteUtil', 'flixel.util.FlxAxes', 'flixel.addons.effects.FlxTrail',
+		'flixel.addons.display.FlxBackdrop', 'Note', 'StrumNote', 'NoteSplash', 'Song', 'MusicBeatState', 'BGSprite',
+		'psychlua.ModchartSprite', 'psychlua.LuaUtils'
+	];
 	public var interp:Interp;
 	var _parsedCache:Map<String, Expr> = new Map();
 
@@ -63,6 +72,19 @@ class HScript
 		#end
 		interp.variables.set('ShaderFilter', openfl.filters.ShaderFilter);
 		interp.variables.set('StringTools', StringTools);
+
+		// Classes scripts expect to find without calling addHaxeLibrary (same set as newer Psych-based engines).
+		// Only the ones that exist in this build are added, and nothing already set above is replaced.
+		for (path in COMMON_CLASSES)
+		{
+			final name = path.substr(path.lastIndexOf('.') + 1);
+			if (!interp.variables.exists(name))
+			{
+				final cls = Type.resolveClass(path);
+				if (cls != null)
+					interp.variables.set(name, cls);
+			}
+		}
 
 		interp.variables.set('setVar', function(name:String, value:Dynamic)
 		{
@@ -195,8 +217,6 @@ class HScript
 			#else
 			LuaUtils.luaTrace(funk.lua, "runHaxeCode: HScript isn't supported on this platform!", false, false, FlxColor.RED);
 			#end
-
-			trace('runHaxeCode added');
 
 			if(retVal != null && !LuaUtils.isOfTypes(retVal, types)) retVal = null;
 			return retVal;

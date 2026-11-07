@@ -1390,7 +1390,9 @@ class PlayState extends MusicBeatState
 
 		RecalculateRating();
 
-		if(!ClientPrefs.controllerMode)
+		// phones: the key events are always listened to, because the extra-keys hitbox types real keys
+		// (onKeyPress ignores them while the normal four-lane controller path is in use)
+		if(!ClientPrefs.controllerMode #if mobile || true #end)
 		{
 			FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 			FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
@@ -4648,7 +4650,7 @@ class PlayState extends MusicBeatState
 		var eventKey:FlxKey = event.keyCode;
 		var key:Int = getKeyFromEvent(eventKey);
 
-		if (!ClientPrefs.controllerMode){
+		if (!ClientPrefs.controllerMode || mobileKeyLanes()){
 			#if debug
 			// Prevents crash specifically on debug without needing to try catch shit
 			@:privateAccess if (!FlxG.keys._keyListMap.exists(eventKey))
@@ -4661,6 +4663,16 @@ class PlayState extends MusicBeatState
 	}
 
 	public var strumsBlocked:Array<Bool> = [];
+	/** Phones: true while a script (extra keys) has replaced the four keys, so the hitbox lanes type keyboard keys. */
+	inline function mobileKeyLanes():Bool
+	{
+		#if mobile
+		return keysArray.length != 4;
+		#else
+		return false;
+		#end
+	}
+
 	private function keyPressed(key:Int):Void
 	{
 		if(cpuControlled || paused || key < 0) return;
@@ -4740,7 +4752,7 @@ class PlayState extends MusicBeatState
 		var key:Int = getKeyFromEvent(eventKey);
 		// trace('Pressed: ' + eventKey);
 
-		if (!ClientPrefs.controllerMode && key > -1)
+		if ((!ClientPrefs.controllerMode || mobileKeyLanes()) && key > -1)
 			keyReleased(key);
 	}
 
@@ -5539,7 +5551,7 @@ class PlayState extends MusicBeatState
 
 		stagesFunc(function(stage:BaseStage) stage.destroy());
 
-		if(!ClientPrefs.controllerMode)
+		if(!ClientPrefs.controllerMode #if mobile || true #end)
 		{
 			FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 			FlxG.stage.removeEventListener(KeyboardEvent.KEY_UP, onKeyRelease);

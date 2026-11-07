@@ -28,6 +28,13 @@ class MobileControls
 	public var hitbox(default, null):Hitbox;
 	public var keypad(default, null):KeyPad;
 
+	/**
+	 * Cameras over the black bars next to the game (Screen: Ratio on a phone wider than 16:9), or null when there are none.
+	 * The pause button lives in the right one, the Bot Energy button in the left one.
+	 */
+	public var rightBar(default, null):FlxCamera;
+	public var leftBar(default, null):FlxCamera;
+
 	/** Set by gameplay while a cutscene / dialogue is running: shows the pad instead of the hitbox. */
 	public var cutsceneMode:Bool = false;
 
@@ -42,6 +49,13 @@ class MobileControls
 			FlxG.scaleMode = new flixel.system.scaleModes.FillScaleMode();
 		else if (!fill && !Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.RatioScaleMode))
 			FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode();
+	}
+
+	/** Width of one black bar, in game pixels (0 when the game fills the display). */
+	public static function barWidth():Float
+	{
+		final mode = FlxG.scaleMode;
+		return (mode != null && mode.scale != null && mode.scale.x > 0) ? mode.offset.x / mode.scale.x : 0;
 	}
 
 	/**
@@ -107,11 +121,21 @@ class MobileControls
 			state.add(pad);
 		}
 
+		// the black bars of a wide phone are free screen space: the pause button goes there, off the notes
+		final bar = Math.floor(barWidth());
+		if (withHitbox && bar >= Hitbox.SIDE_MIN)
+		{
+			rightBar = sideCamera(FlxG.width, bar);
+			leftBar = sideCamera(-bar, bar);
+		}
+
 		if (withHitbox)
 		{
 			hitbox = new Hitbox(ClientPrefs.hitboxAlpha, hitboxStyle(), ClientPrefs.hitboxPosition == 'Bottom', ClientPrefs.mobileExtraButtons,
 				ClientPrefs.hideHitboxHints);
 			hitbox.assignCamera(camera);
+			if (rightBar != null)
+				hitbox.moveToBars(rightBar, leftBar, bar);
 			state.add(hitbox);
 			// the chart editor's test play ends with Esc, not with the pause control
 			if (Std.isOfType(state, editors.EditorPlayState))
@@ -127,6 +151,16 @@ class MobileControls
 
 		FlxG.signals.preUpdate.add(onPreUpdate);
 		onPreUpdate();
+	}
+
+	static function sideCamera(x:Float, width:Float):FlxCamera
+	{
+		final cam = new FlxCamera(Std.int(x), 0, Std.int(width), FlxG.height);
+		cam.bgColor = FlxColor.TRANSPARENT;
+		FlxG.cameras.add(cam, false);
+		FlxG.cameras.list.remove(cam);
+		FlxG.cameras.list.unshift(cam);
+		return cam;
 	}
 
 	static function hitboxStyle():Int
@@ -150,6 +184,12 @@ class MobileControls
 		final top = game.getChildIndex(game._inputContainer) - 1;
 		if (game.getChildIndex(camera.flashSprite) != top)
 			game.setChildIndex(camera.flashSprite, top);
+		// the bar cameras never overlap the game area, so they only need to stay above what is added later
+		if (rightBar != null && game.getChildIndex(rightBar.flashSprite) != top - 1)
+		{
+			game.setChildIndex(rightBar.flashSprite, top - 1);
+			game.setChildIndex(leftBar.flashSprite, top - 1);
+		}
 
 		if (hitbox == null)
 		{
@@ -191,6 +231,8 @@ class MobileControls
 		MobileInput.backIsEscape = false;
 		state = null;
 		camera = null;
+		rightBar = null;
+		leftBar = null;
 		MobileInput.releaseAll();
 	}
 }

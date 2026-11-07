@@ -63,6 +63,19 @@ class MobileInput implements IFlxInputManager
 			return;
 		instance = new MobileInput();
 		FlxG.inputs.add(instance);
+
+		// ORDER MATTERS (this is input latency). `FlxG.inputs` updates its managers in list order, and the Controls
+		// action manager takes its snapshot of every button during its own update. When this manager ran after it,
+		// the lanes were seen one frame late by everything that reads `Controls` (the whole game). Right after the
+		// touch manager is the earliest possible spot: the touches are fresh and nobody has read the buttons yet.
+		final list = FlxG.inputs.list;
+		list.remove(instance);
+		final at = list.indexOf(FlxG.touches);
+		list.insert(at >= 0 ? at + 1 : 0, instance);
+
+		// A tap that starts and ends between two frames leaves a touch that is only "just released", which would
+		// be a dropped note. Remember which touches began since the last frame so that tap still counts once.
+		FlxG.stage.addEventListener(openfl.events.TouchEvent.TOUCH_BEGIN, onTouchBegin);
 	}
 
 	public static inline function input(id:MobileButtonID):FlxInput<Int>
@@ -172,6 +185,11 @@ class MobileInput implements IFlxInputManager
 
 	function new() {}
 
+	static final quickTaps:Array<Int> = [];
+
+	static function onTouchBegin(e:openfl.events.TouchEvent):Void
+		quickTaps.push(e.touchPointID);
+
 	public function update():Void
 	{
 		while (pendingUp.length > 0)
@@ -205,7 +223,8 @@ class MobileInput implements IFlxInputManager
 				for (i in 0...touches.length)
 				{
 					final touch = touches[i];
-					if (touch == null || !(touch.pressed || touch.justPressed))
+					// pressed, just pressed, or a tap that already ended inside this very frame
+if (touch == null || !(touch.pressed || touch.justPressed || (touch.justReleased && quickTaps.length > 0 && quickTaps.contains(touch.touchPointID))))
 						continue;
 					if (claimed[i] && !button.exclusive)
 						continue;
@@ -220,6 +239,9 @@ class MobileInput implements IFlxInputManager
 				}
 			}
 		}
+
+		if (quickTaps.length > 0)
+			quickTaps.resize(0);
 
 		// press()/release() first, update() after: this makes JUST_PRESSED last exactly one frame,
 		// the same way FlxKeyboard behaves.

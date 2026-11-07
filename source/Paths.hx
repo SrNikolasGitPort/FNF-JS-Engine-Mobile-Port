@@ -932,8 +932,8 @@ class Paths
   {
     if (Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0)
     {
-      var fileToCheck:String = mods(Mods.currentModDirectory + '/' + key);
-      if (FileSystem.exists(fileToCheck))
+      var fileToCheck:String = existingPath(mods(Mods.currentModDirectory + '/' + key));
+      if (fileToCheck != null)
       {
         return fileToCheck;
       }
@@ -941,10 +941,20 @@ class Paths
 
     for (mod in Mods.getGlobalMods())
     {
-      var fileToCheck:String = mods(mod + '/' + key);
-      if (FileSystem.exists(fileToCheck)) return fileToCheck;
+      var fileToCheck:String = existingPath(mods(mod + '/' + key));
+      if (fileToCheck != null) return fileToCheck;
     }
-    return mods(key);
+    return existingPath(mods(key)) ?? mods(key);
+  }
+
+  /** `path` if it exists; on Android also the same path with different upper/lower case (see PathCase); otherwise null. */
+  static inline function existingPath(path:String):Null<String>
+  {
+    #if android
+    return mobile.backend.PathCase.resolve(path);
+    #else
+    return FileSystem.exists(path) ? path : null;
+    #end
   }
 
   public static function getBackupFilePath(songPath:String, diff:String):String
