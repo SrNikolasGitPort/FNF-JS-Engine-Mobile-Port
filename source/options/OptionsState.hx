@@ -89,9 +89,6 @@ mobilePadMode = RESETTABLE;
     otherCamera.bgColor.alpha = 0;
     // proper fix
     if (onPlayState && PlayState.SONG.disableNoteRGB) options.remove('Note Colors');
-    #if mobile
-    options.remove('Controls'); // keyboard rebinding is useless on a phone
-    #end
 
     FlxG.cameras.add(subCamera, false);
     FlxG.cameras.add(otherCamera, false);

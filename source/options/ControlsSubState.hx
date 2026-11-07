@@ -59,6 +59,15 @@ class ControlsSubState extends MusicBeatSubstate
     grpOptions = new FlxTypedGroup<Alphabet>();
     add(grpOptions);
 
+    #if mobile
+    // keys are rebound with a real keyboard (USB / Bluetooth); the touch buttons only navigate this screen
+    hint = new FlxText(20, 8, FlxG.width - 40, hintIdle, 22);
+    hint.setFormat(Paths.font('vcr.ttf'), 22, 0xFFFFFFFF, CENTER, OUTLINE, 0xFF000000);
+    hint.borderSize = 2;
+    hint.scrollFactor.set();
+    add(hint);
+    #end
+
     optionShit.push(['']);
     optionShit.push([defaultKey]);
 
@@ -97,6 +106,12 @@ class ControlsSubState extends MusicBeatSubstate
   }
 
   var leaving:Bool = false;
+
+  #if mobile
+  static inline var hintIdle:String = 'Keyboard controls: connect a USB / Bluetooth keyboard to change keys.\nD-pad + A = pick a key, B = back';
+  static inline var hintBinding:String = 'Press the new key on your keyboard...\nB = cancel';
+  var hint:FlxText;
+  #end
   var bindingTime:Float = 0;
 
   override function update(elapsed:Float)
@@ -135,6 +150,7 @@ class ControlsSubState extends MusicBeatSubstate
         {
           bindingTime = 0;
           rebindingKey = true;
+          #if mobile hint.text = hintBinding; #end
           if (curAlt)
           {
             grpInputsAlt[getInputTextNum()].alpha = 0.0001;
@@ -147,6 +163,11 @@ class ControlsSubState extends MusicBeatSubstate
       }
     } else
     {
+      #if mobile
+      // the on-screen B cancels (a physical key, Esc included, is still bound like on a computer)
+      if (controls.BACK && FlxG.keys.firstJustPressed() < 0)
+        bindingTime = 6;
+      #end
       final keyPressed:Int = FlxG.keys.firstJustPressed();
       if (keyPressed > -1)
       {
@@ -163,6 +184,7 @@ class ControlsSubState extends MusicBeatSubstate
         reloadKeys();
         FlxG.sound.play(Paths.sound('confirmMenu'));
         rebindingKey = false;
+        #if mobile hint.text = hintIdle; #end
       }
 
       bindingTime += elapsed;
@@ -178,6 +200,7 @@ class ControlsSubState extends MusicBeatSubstate
         FlxG.sound.play(Paths.sound('scrollMenu'));
         rebindingKey = false;
         bindingTime = 0;
+        #if mobile hint.text = hintIdle; #end
       }
     }
 

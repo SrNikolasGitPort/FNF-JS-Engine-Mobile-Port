@@ -58,3 +58,6 @@ haxelib run lime build android -armv7 -arm64 -release
 ## Mods and scripts
 - Lua scripts and `runHaxeCode` work as on desktop. Common classes (Math, Std, FlxColor, FlxMath, FlxText, FlxTrail, Note, StrumNote...) are available to Haxe code without `addHaxeLibrary`.
 - Android file names are case sensitive. The game now finds a mod file even when its name is written with different upper/lower case than the file on disk (`Images/BF.png` vs `images/bf.png`).
+
+## Keyboard
+A USB or Bluetooth keyboard works everywhere (menus, songs, editors). Open **Options > Controls** to set your own keys, the same screen as on a computer: pick an action with the D-pad + A, press the new key on the keyboard, press B to cancel. Keys are saved with the other options.
