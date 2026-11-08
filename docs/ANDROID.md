@@ -62,4 +62,4 @@ haxelib run lime build android -armv7 -arm64 -release
 ## Keyboard
 A USB or Bluetooth keyboard works everywhere (menus, songs, editors). Open **Options > Controls** to set your own keys, the same screen as on a computer: pick an action with the D-pad + A, press the new key on the keyboard, press B to cancel. Keys are saved with the other options.
 
-The FPS / memory counter is larger and kept away from the screen corner so notches and rounded corners do not hide it.
+The FPS / memory counter is kept away from the screen corner so notches and rounded corners do not hide it.

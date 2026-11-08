@@ -176,13 +176,13 @@ class FPSCounter extends TextField
 
   #if mobile
   /**
-   * Phones: bigger text, kept away from the corner (notches and rounded corners cover it there) and with a dark
+   * Phones: original text size, kept away from the corner (notches and rounded corners cover it there) and with a dark
    * outline so it can be read over any background. It follows the screen size, so it looks the same on every phone.
    */
   function layoutMobile():Void
   {
     if (stage == null) return;
-    final size = Std.int(Math.max(18, stage.stageHeight / 38));
+    final size = 14; // original size
     if (defaultTextFormat.size != size)
     {
       final format = defaultTextFormat;
