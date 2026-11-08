@@ -2952,6 +2952,9 @@ class PlayState extends MusicBeatState
 		// dialogue/cutscenes need A/B, so they get the pad instead of the hitbox
 		if (mobile.MobileControls.instance != null)
 			mobile.MobileControls.instance.cutsceneMode = inCutscene;
+		// extra-keys scripts replace keysArray: keep one touch lane per key
+		if (mobile.MobileControls.instance != null && mobile.MobileControls.instance.hitbox != null)
+			mobile.MobileControls.instance.hitbox.syncLanes(keysArray);
 		#end
 		grpCrossFade.update(elapsed);
 		grpCrossFade.forEachDead(function(img:CrossFade)

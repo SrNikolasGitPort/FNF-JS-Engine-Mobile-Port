@@ -353,6 +353,47 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 			}
 			reloadControls();
 		}
+		seedExtraKeys();
+	}
+
+	/**
+	 * Default keyboard keys of the Extra Keys script (one list per key count, 1k..18k; negative = uses the normal
+	 * note_left/down/up/right binds). The script reads `extraKeys<count> <lane>` from `keyBinds` and crashes if it is
+	 * missing, and normally only the "rebind controls" song creates them, so every bind is created here up front.
+	 */
+	static final EXTRA_KEYS_DEFAULTS:Array<Array<Int>> = [
+		[32],
+		[-10,-13],
+		[-10,32,-13],
+		[-10,-11,-12,-13],
+		[-10,-11,32,-12,-13],
+		[83,68,70,74,75,76],
+		[83,68,70,32,74,75,76],
+		[65,83,68,70,72,74,75,76],
+		[65,83,68,70,32,72,74,75,76],
+		[81,87,69,82,86,78,85,73,79,80],
+		[81,87,69,82,86,66,78,85,73,79,80],
+		[81,87,69,82,67,86,66,78,85,73,79,80],
+		[81,87,69,82,67,86,32,66,78,85,73,79,80],
+		[81,87,69,82,88,67,86,66,78,77,85,73,79,80],
+		[81,87,69,82,88,67,86,32,66,78,77,85,73,79,80],
+		[81,87,69,82,65,83,68,70,72,74,75,76,89,85,73,79],
+		[81,87,69,82,65,83,68,70,32,72,74,75,76,89,85,73,79],
+		[81,87,69,82,65,83,68,70,86,78,72,74,75,76,85,73,79,80]
+	];
+
+	public static function seedExtraKeys():Void
+	{
+		for (i in 0...EXTRA_KEYS_DEFAULTS.length)
+		{
+			final row = EXTRA_KEYS_DEFAULTS[i];
+			for (lane in 0...row.length)
+			{
+				final name = 'extraKeys' + row.length + ' ' + lane;
+				if (!keyBinds.exists(name))
+					keyBinds.set(name, [row[lane] > 0 ? cast row[lane] : FlxKey.NONE, FlxKey.NONE]);
+			}
+		}
 	}
 
 	inline public static function getGameplaySetting(name:String, defaultValue:Dynamic):Dynamic {

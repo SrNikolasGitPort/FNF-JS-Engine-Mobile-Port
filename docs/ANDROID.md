@@ -63,3 +63,9 @@ haxelib run lime build android -armv7 -arm64 -release
 A USB or Bluetooth keyboard works everywhere (menus, songs, editors). Open **Options > Controls** to set your own keys, the same screen as on a computer: pick an action with the D-pad + A, press the new key on the keyboard, press B to cancel. Keys are saved with the other options.
 
 The FPS / memory counter is kept away from the screen corner so notches and rounded corners do not hide it.
+
+## Extra Keys (1k–18k) on Android
+
+- Songs that use the **Extra Keys** Lua script get one touch lane per key automatically: the hitbox rebuilds itself whenever the script changes the key count (including mid-song "Change Mania" events). Each lane types the key the script assigned to it, so scripts keep working through `onKeyPress` / `onKeyRelease` like on a computer.
+- The script reads `extraKeys<count> <lane>` binds, normally created by the "rebind controls" song. The engine now creates all of them (1k–18k) on startup, so no rebind song is needed.
+- Use `docs/scripts/extra_keys_mobile.lua`: it is the original script with the key-name popup above the strums skipped on Android (`buildTarget == 'android'`). Put it in your mod's `scripts` folder instead of the original.
