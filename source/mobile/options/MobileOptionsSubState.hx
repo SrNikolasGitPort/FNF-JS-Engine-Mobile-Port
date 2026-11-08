@@ -59,7 +59,7 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		option.onChange = refresh;
 		addOption(option);
 
-		option = new Option('Screen:', 'Ratio: the normal 16:9 picture, black bars on wide phones.\nFull Screen: no black bars, nothing stretched (the very top and bottom edges are cut a little).\nStretched: distorts the picture to fill the display.', 'mobileScaleMode', 'string',
+		option = new Option('Screen:', 'Ratio: the normal 16:9 picture, black bars on wide phones.\nFull Screen: the normal picture without black bars (no zoom, nothing cut or distorted).\nStretched: distorts the picture to fill the display.', 'mobileScaleMode', 'string',
 			'Ratio', ['Ratio', 'Full Screen', 'Stretched']);
 		option.onChange = function()
 		{

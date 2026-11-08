@@ -12,7 +12,7 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var hideHitboxHints:Bool = false; // true = the lanes are never drawn (they still work)
 	public static var mobileVibration:Bool = false; // short vibration on every button press
 	public static var mobileExtraButtons:Bool = false; // shows the Bot Energy button in songs
-	public static var mobileScaleMode:String = 'Ratio'; // Ratio (16:9 with black bars) / Full Screen (no bars, nothing stretched) / Stretched (distorted to the whole screen)
+	public static var mobileScaleMode:String = 'Ratio'; // Ratio (16:9 with black bars) / Full Screen (normal picture, no bars, no zoom) / Stretched (distorted to the whole screen)
 
 	//Gameplay Settings
 	public static var controllerMode:Bool = false;

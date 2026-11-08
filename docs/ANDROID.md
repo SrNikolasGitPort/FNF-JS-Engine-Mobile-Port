@@ -35,7 +35,7 @@ Every screen only shows the buttons it uses, with a caption on each one.
 | Hide Hitbox Hints | never draw the lanes (they keep working) |
 | Extra Button | Bot Energy button during songs |
 | Vibration | short vibration on every press |
-| Screen | **Ratio**: normal 16:9, black bars on wide phones. **Full Screen**: no black bars and nothing stretched (a thin strip at the top and bottom is cut; the buttons stay inside the visible part). **Stretched**: distorts the picture to fill the display |
+| Screen | **Ratio**: normal 16:9, black bars on wide phones. **Full Screen**: the normal picture without black bars, no zoom and nothing cut (the game just shows a bit more scenery on the sides; reopen the current screen to see it fully). **Stretched**: distorts the picture to fill the display |
 
 A small hitbox preview is shown in the top-right corner while you change the options.
 

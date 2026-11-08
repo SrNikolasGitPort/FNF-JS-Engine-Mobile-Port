@@ -53,8 +53,8 @@ class MobileControls
 				if (!Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.FillScaleMode))
 					FlxG.scaleMode = new flixel.system.scaleModes.FillScaleMode();
 			case 'Full Screen':
-				if (!Std.isOfType(FlxG.scaleMode, CoverScaleMode))
-					FlxG.scaleMode = new CoverScaleMode();
+				if (!Std.isOfType(FlxG.scaleMode, FullScreenScaleMode))
+					FlxG.scaleMode = new FullScreenScaleMode();
 			default:
 				if (!Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.RatioScaleMode))
 					FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode();
@@ -62,8 +62,8 @@ class MobileControls
 	}
 
 	/**
-	 * The part of the 1280x720 game that is really on screen, in game pixels. It is the whole game except in Full Screen,
-	 * where a thin strip is cut off. The touch buttons are laid out inside this rectangle so none of them is hidden.
+	 * The part of the 1280x720 game that is really on screen, in game pixels. It is always the whole (logical) game;
+	 * the touch buttons are laid out inside this rectangle.
 	 */
 	public static var viewX(default, null):Int = 0;
 	public static var viewY(default, null):Int = 0;
@@ -72,15 +72,6 @@ class MobileControls
 
 	static function computeView():Void
 	{
-		final mode = FlxG.scaleMode;
-		if (Std.isOfType(mode, CoverScaleMode) && mode.scale.x > 0 && mode.scale.y > 0)
-		{
-			viewX = Std.int(Math.max(0, Math.round(-mode.offset.x / mode.scale.x)));
-			viewY = Std.int(Math.max(0, Math.round(-mode.offset.y / mode.scale.y)));
-			viewW = Std.int(Math.min(FlxG.width, Math.round(mode.deviceSize.x / mode.scale.x)));
-			viewH = Std.int(Math.min(FlxG.height, Math.round(mode.deviceSize.y / mode.scale.y)));
-		}
-		else
 		{
 			viewX = viewY = 0;
 			viewW = FlxG.width;
