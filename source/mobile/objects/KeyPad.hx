@@ -3,6 +3,7 @@ package mobile.objects;
 import flixel.FlxCamera;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.input.keyboard.FlxKey;
+import mobile.MobileControls;
 import mobile.MobileInput;
 
 /** One key of a `KeyPad`: caption, key, and whether a tap latches it (modifier keys). */
@@ -85,8 +86,8 @@ class KeyPad extends FlxTypedGroup<TouchButton>
 		// bottom-right block, filled from the bottom up, 7 keys per row
 		final perRow = 7;
 		final rows = Math.ceil(spec.length / perRow);
-		final x0 = 1280 - 10 - perRow * (KEY_W + KEY_GAP) + KEY_GAP;
-		final y0 = 720 - 10 - KEY_H - 52; // leaves room for the tab below
+		final x0 = MobileControls.viewW - 10 - perRow * (KEY_W + KEY_GAP) + KEY_GAP;
+		final y0 = MobileControls.viewH - 10 - KEY_H - 52; // leaves room for the tab below
 		for (i in 0...spec.length)
 		{
 			final col = i % perRow;
@@ -104,7 +105,7 @@ class KeyPad extends FlxTypedGroup<TouchButton>
 		}
 
 		toggleId = MobileInput.allocId();
-		toggle = new TouchButton(1280 - 10 - 170, 720 - 10 - 44, toggleId, MobileGraphics.pill(170, 44, 0xFF444444));
+		toggle = new TouchButton(MobileControls.viewW - 10 - 170, MobileControls.viewH - 10 - 44, toggleId, MobileGraphics.pill(170, 44, 0xFF444444));
 		toggle.hitPadding = 6;
 		toggle.exclusive = true;
 		toggle.priority = 10;

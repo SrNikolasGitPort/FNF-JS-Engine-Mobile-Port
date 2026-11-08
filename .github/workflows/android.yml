@@ -38,7 +38,7 @@ permissions:
 
 env:
   RELEASE_NAME: FNF JS Engine Mobile Port
-  APK_NAME: FNF-JS-Engine-Mobile-Port.apk
+  APK_NAME: JS-Android.apk
 
 concurrency:
   group: android-build

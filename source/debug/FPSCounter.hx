@@ -151,7 +151,7 @@ class FPSCounter extends TextField
   @:noCompletion
   private function set_align(val)
   {
-    return align = defaultTextFormat.align = switch (val)
+    align = defaultTextFormat.align = switch (val)
     {
       default:
         this.x = 10;
@@ -168,5 +168,33 @@ class FPSCounter extends TextField
         autoSize = RIGHT;
         RIGHT;
     }
+    #if mobile
+    layoutMobile();
+    #end
+    return align;
   }
+
+  #if mobile
+  /**
+   * Phones: bigger text, kept away from the corner (notches and rounded corners cover it there) and with a dark
+   * outline so it can be read over any background. It follows the screen size, so it looks the same on every phone.
+   */
+  function layoutMobile():Void
+  {
+    if (stage == null) return;
+    final size = Std.int(Math.max(18, stage.stageHeight / 38));
+    if (defaultTextFormat.size != size)
+    {
+      final format = defaultTextFormat;
+      format.size = size;
+      format.align = LEFT;
+      defaultTextFormat = format;
+      setTextFormat(format);
+    }
+    if (filters.length == 0) filters = [new openfl.filters.GlowFilter(0x000000, 1, 5, 5, 8, 1)];
+    autoSize = LEFT;
+    this.x = Math.max(28, stage.stageWidth * 0.05);
+    this.y = Math.max(12, stage.stageHeight * 0.03);
+  }
+  #end
 }

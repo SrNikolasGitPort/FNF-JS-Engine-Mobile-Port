@@ -2,6 +2,7 @@ package mobile.objects;
 
 import flixel.FlxCamera;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import mobile.MobileControls;
 import mobile.MobileInput;
 
 enum PadMode
@@ -98,7 +99,7 @@ class VirtualPad extends FlxTypedGroup<TouchButton>
 
 		final S = 108; // d-pad button size
 		final cx = 20 + S * 1.5; // d-pad centre x
-		final cy = 720 - 20 - S * 1.5; // d-pad centre y
+		final cy = MobileControls.viewH - 20 - S * 1.5; // d-pad centre y
 
 		if (cfg.dpad == 1 || cfg.dpad == 2)
 		{
@@ -112,8 +113,8 @@ class VirtualPad extends FlxTypedGroup<TouchButton>
 		}
 
 		final R = 128; // face button size
-		final rx = 1280 - 20 - R;
-		final ry = 720 - 20 - R;
+		final rx = MobileControls.viewW - 20 - R;
+		final ry = MobileControls.viewH - 20 - R;
 		if (cfg.a != null)
 			buttonA = face(rx, ry - 20, A, 'A', 0xFF2EA043, cfg.a);
 		if (cfg.b != null)
@@ -128,7 +129,7 @@ class VirtualPad extends FlxTypedGroup<TouchButton>
 		if (cfg.editors)
 		{
 			// custom wide button that opens the editors (replaces the old unlabeled "X")
-			buttonX = new TouchButton(1280 - 20 - 250, ry - R - 70, X, MobileGraphics.pill(250, 84, 0xFF8957E5));
+			buttonX = new TouchButton(MobileControls.viewW - 20 - 250, ry - R - 70, X, MobileGraphics.pill(250, 84, 0xFF8957E5));
 			buttonX.hitPadding = 8;
 			buttonX.setLabel('Editors', 30);
 			add(buttonX);

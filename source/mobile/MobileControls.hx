@@ -44,18 +44,55 @@ class MobileControls
 	/** Applies the "Screen" option: keep 16:9 with black bars (Ratio) or stretch to the whole display (Fill). */
 	public static function applyScaleMode():Void
 	{
-		final fill = ClientPrefs.mobileScaleMode == 'Fill';
-		if (fill && !Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.FillScaleMode))
-			FlxG.scaleMode = new flixel.system.scaleModes.FillScaleMode();
-		else if (!fill && !Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.RatioScaleMode))
-			FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode();
+		if (ClientPrefs.mobileScaleMode == 'Fill') // old name of "Stretched"
+			ClientPrefs.mobileScaleMode = 'Stretched';
+
+		switch (ClientPrefs.mobileScaleMode)
+		{
+			case 'Stretched':
+				if (!Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.FillScaleMode))
+					FlxG.scaleMode = new flixel.system.scaleModes.FillScaleMode();
+			case 'Full Screen':
+				if (!Std.isOfType(FlxG.scaleMode, CoverScaleMode))
+					FlxG.scaleMode = new CoverScaleMode();
+			default:
+				if (!Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.RatioScaleMode))
+					FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode();
+		}
+	}
+
+	/**
+	 * The part of the 1280x720 game that is really on screen, in game pixels. It is the whole game except in Full Screen,
+	 * where a thin strip is cut off. The touch buttons are laid out inside this rectangle so none of them is hidden.
+	 */
+	public static var viewX(default, null):Int = 0;
+	public static var viewY(default, null):Int = 0;
+	public static var viewW(default, null):Int = 1280;
+	public static var viewH(default, null):Int = 720;
+
+	static function computeView():Void
+	{
+		final mode = FlxG.scaleMode;
+		if (Std.isOfType(mode, CoverScaleMode) && mode.scale.x > 0 && mode.scale.y > 0)
+		{
+			viewX = Std.int(Math.max(0, Math.round(-mode.offset.x / mode.scale.x)));
+			viewY = Std.int(Math.max(0, Math.round(-mode.offset.y / mode.scale.y)));
+			viewW = Std.int(Math.min(FlxG.width, Math.round(mode.deviceSize.x / mode.scale.x)));
+			viewH = Std.int(Math.min(FlxG.height, Math.round(mode.deviceSize.y / mode.scale.y)));
+		}
+		else
+		{
+			viewX = viewY = 0;
+			viewW = FlxG.width;
+			viewH = FlxG.height;
+		}
 	}
 
 	/** Width of one black bar, in game pixels (0 when the game fills the display). */
 	public static function barWidth():Float
 	{
 		final mode = FlxG.scaleMode;
-		return (mode != null && mode.scale != null && mode.scale.x > 0) ? mode.offset.x / mode.scale.x : 0;
+		return (mode != null && mode.scale != null && mode.scale.x > 0) ? Math.max(0, mode.offset.x / mode.scale.x) : 0;
 	}
 
 	/**
@@ -105,7 +142,8 @@ class MobileControls
 	{
 		this.state = state;
 
-		camera = new FlxCamera();
+		computeView();
+		camera = new FlxCamera(viewX, viewY, viewW, viewH);
 		camera.bgColor = FlxColor.TRANSPARENT;
 		FlxG.cameras.add(camera, false);
 		// Many menus (options, pause...) draw on `FlxG.cameras.list[last]`. If that was this camera their
@@ -211,6 +249,13 @@ class MobileControls
 			pad.setActive(showPad);
 		if (showPad)
 			MobileInput.releaseAll(); // do not carry a held lane into the menu
+	}
+
+	/** Rebuilds the buttons of the state on screen (the screen mode changed, so the visible area did). */
+	public static function reload():Void
+	{
+		if (instance != null)
+			onStateSwitched();
 	}
 
 	/** Re-reads the alpha options, so the Mobile Options menu can preview changes live. */

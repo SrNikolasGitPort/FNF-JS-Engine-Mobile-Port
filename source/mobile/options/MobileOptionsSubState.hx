@@ -59,11 +59,12 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		option.onChange = refresh;
 		addOption(option);
 
-		option = new Option('Screen:', 'Ratio keeps the game 16:9 (black bars on wide phones),\nFill stretches it over the whole display.', 'mobileScaleMode', 'string',
-			'Ratio', ['Ratio', 'Fill']);
+		option = new Option('Screen:', 'Ratio: the normal 16:9 picture, black bars on wide phones.\nFull Screen: no black bars, nothing stretched (the very top and bottom edges are cut a little).\nStretched: distorts the picture to fill the display.', 'mobileScaleMode', 'string',
+			'Ratio', ['Ratio', 'Full Screen', 'Stretched']);
 		option.onChange = function()
 		{
 			MobileControls.applyScaleMode();
+			MobileControls.reload();
 			refresh();
 		};
 		addOption(option);

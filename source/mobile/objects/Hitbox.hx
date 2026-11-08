@@ -2,6 +2,7 @@ package mobile.objects;
 
 import flixel.FlxCamera;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import mobile.MobileControls;
 import mobile.MobileInput;
 
 /**
@@ -50,7 +51,7 @@ class Hitbox extends FlxTypedGroup<TouchButton>
 
 		buildLanes(null);
 
-		pauseButton = new TouchButton(FlxG.width - 96 - 14, 14, PAUSE, MobileGraphics.pauseButton(96));
+		pauseButton = new TouchButton(MobileControls.viewW - 96 - 14, 14, PAUSE, MobileGraphics.pauseButton(96));
 		pauseButton.priority = 10;
 		pauseButton.exclusive = true;
 		pauseButton.hitPadding = 14;
@@ -123,14 +124,14 @@ class Hitbox extends FlxTypedGroup<TouchButton>
 		laneKeys = keyMode ? keys : [];
 
 		final count = keyMode ? keys.length : 4;
-		final laneH = bottomOnly ? Std.int(FlxG.height * 0.62) : FlxG.height;
-		final top = FlxG.height - laneH;
+		final laneH = bottomOnly ? Std.int(MobileControls.viewH * 0.62) : MobileControls.viewH;
+		final top = MobileControls.viewH - laneH;
 		final ids:Array<MobileButtonID> = [NOTE_LEFT, NOTE_DOWN, NOTE_UP, NOTE_RIGHT];
 
 		for (i in 0...count)
 		{
-			final x0 = Math.round(i * FlxG.width / count);
-			final x1 = Math.round((i + 1) * FlxG.width / count);
+			final x0 = Math.round(i * MobileControls.viewW / count);
+			final x1 = Math.round((i + 1) * MobileControls.viewW / count);
 			final color = keyMode ? laneColor(i, count) : COLORS[i];
 			final id:Int = keyMode ? MobileInput.allocId() : ids[i];
 			final lane = new TouchButton(x0, top, id, MobileGraphics.hitboxLane(x1 - x0, laneH, color, style));

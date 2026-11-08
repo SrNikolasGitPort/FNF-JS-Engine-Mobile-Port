@@ -1,7 +1,7 @@
 # JS Engine – Android (Mobile Port)
 
 ## Install
-1. Download `FNF-JS-Engine-Mobile-Port.apk` from the **Releases** page.
+1. Download `JS-Android.apk` from the **Releases** page.
 2. Install it (allow "install unknown apps" for your browser/file manager if Android asks).
 3. First launch: the game asks for access to files (needed to create the `.JSEMobile` folder), then copies its files out of the APK ("Preparing game files"). This only happens the first time and after an update.
 
@@ -35,7 +35,7 @@ Every screen only shows the buttons it uses, with a caption on each one.
 | Hide Hitbox Hints | never draw the lanes (they keep working) |
 | Extra Button | Bot Energy button during songs |
 | Vibration | short vibration on every press |
-| Screen | Ratio (keeps 16:9) or Fill (stretch to the display) |
+| Screen | **Ratio**: normal 16:9, black bars on wide phones. **Full Screen**: no black bars and nothing stretched (a thin strip at the top and bottom is cut; the buttons stay inside the visible part). **Stretched**: distorts the picture to fill the display |
 
 A small hitbox preview is shown in the top-right corner while you change the options.
 
@@ -61,3 +61,5 @@ haxelib run lime build android -armv7 -arm64 -release
 
 ## Keyboard
 A USB or Bluetooth keyboard works everywhere (menus, songs, editors). Open **Options > Controls** to set your own keys, the same screen as on a computer: pick an action with the D-pad + A, press the new key on the keyboard, press B to cancel. Keys are saved with the other options.
+
+The FPS / memory counter is larger and kept away from the screen corner so notches and rounded corners do not hide it.
