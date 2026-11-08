@@ -67,5 +67,5 @@ The FPS / memory counter is kept away from the screen corner so notches and roun
 ## Extra Keys (1k–18k) on Android
 
 - Songs that use the **Extra Keys** Lua script get one touch lane per key automatically: the hitbox rebuilds itself whenever the script changes the key count (including mid-song "Change Mania" events). Each lane types the key the script assigned to it, so scripts keep working through `onKeyPress` / `onKeyRelease` like on a computer.
-- The script reads `extraKeys<count> <lane>` binds, normally created by the "rebind controls" song. The engine now creates all of them (1k–18k) on startup, so no rebind song is needed.
+- The script reads `extraKeys<count> <lane>` binds, normally created by the "rebind controls" song. The Android script creates all of them (1k–18k) by itself, so no rebind song is needed.
 - Use `docs/scripts/extra_keys_mobile.lua`: it is the original script with the key-name popup above the strums skipped on Android (`buildTarget == 'android'`). Put it in your mod's `scripts` folder instead of the original.

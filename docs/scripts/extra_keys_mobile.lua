@@ -284,8 +284,24 @@ function onCreatePost()
     addHaxeLibrary('FlxMath', 'flixel.math')
     addHaxeLibrary('PreloadedChartNote', 'Note')
 
+    seedBinds()
     reparseChart()
     updateNotes()
+end
+
+--creates every extraKeys<count> <lane> bind (normally only the 'rebind controls' song does), so no rebind song is needed
+function seedBinds()
+    for m = 0,#maniaData-1 do
+        local kc = #maniaData[m+1][CONTROLS]
+        for i = 0,kc-1 do
+            local key = maniaData[m+1][CONTROLS][i+1]
+            if key < 0 then key = -1 end
+            runHaxeCode([[
+                if (!ClientPrefs.keyBinds.exists('extraKeys]]..kc..' '..i..[['))
+                    ClientPrefs.keyBinds.set('extraKeys]]..kc..' '..i..[[', []]..key..[[, 0]);
+            ]])
+        end
+    end
 end
 
 function reparseChart()
