@@ -18,7 +18,18 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		title = 'Mobile Options';
 		rpcTitle = 'Mobile Options Menu';
 
-		var option:Option = new Option('Pad Opacity', 'How visible the menu buttons (D-pad, A, B) are.', 'mobilePadAlpha', 'percent', 0.6);
+		var option:Option = new Option('Screen:', 'Ratio: the normal 16:9 picture, with black bars on wide phones.\nFull Screen: same picture and HUD, but the scenery fills the bars (no zoom, nothing cut).\nStretched: distorts the picture to fill the display.', 'mobileScaleMode', 'string',
+			'Ratio', ['Ratio', 'Full Screen', 'Stretched']);
+		option.onChange = function()
+		{
+			MobileControls.applyScaleMode();
+			MobileControls.reload();
+			refresh();
+		};
+		addOption(option);
+
+
+		option = new Option('Pad Opacity', 'How visible the menu buttons (D-pad, A, B, X, Y...) are.', 'mobilePadAlpha', 'percent', 0.6);
 		option.scrollSpeed = 1;
 		option.minValue = 0.1;
 		option.maxValue = 1;
@@ -27,7 +38,7 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		option.onChange = refresh;
 		addOption(option);
 
-		option = new Option('Hitbox Opacity', 'How visible the four lanes are while playing.\nAt 0% they are invisible but still work.', 'hitboxAlpha', 'percent', 0.35);
+		option = new Option('Hitbox Opacity', 'How visible the four lanes are while playing.\n0% = invisible but they still work.', 'hitboxAlpha', 'percent', 0.35);
 		option.scrollSpeed = 1;
 		option.minValue = 0;
 		option.maxValue = 1;
@@ -57,16 +68,6 @@ class MobileOptionsSubState extends BaseOptionsMenu
 
 		option = new Option('Vibration', 'Short vibration every time you press a button.', 'mobileVibration', 'bool', false);
 		option.onChange = refresh;
-		addOption(option);
-
-		option = new Option('Screen:', 'Ratio: the normal 16:9 picture, black bars on wide phones.\nFull Screen: the normal picture without black bars (no zoom, nothing cut or distorted).\nStretched: distorts the picture to fill the display.', 'mobileScaleMode', 'string',
-			'Ratio', ['Ratio', 'Full Screen', 'Stretched']);
-		option.onChange = function()
-		{
-			MobileControls.applyScaleMode();
-			MobileControls.reload();
-			refresh();
-		};
 		addOption(option);
 
 		super();

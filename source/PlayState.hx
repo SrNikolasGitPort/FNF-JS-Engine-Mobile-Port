@@ -524,6 +524,7 @@ class PlayState extends MusicBeatState
 		camHUD.bgColor.alpha = camOther.bgColor.alpha = 0;
 
 		FlxG.cameras.reset(camGame);
+		#if mobile mobile.FullScreenScaleMode.extend(camGame); #end
 		FlxG.cameras.add(camHUD, false);
 		FlxG.cameras.add(camOther, false);
 		grpHoldSplashes = new FlxTypedGroup<SustainSplash>((ClientPrefs.maxSplashLimit != 0 ? ClientPrefs.maxSplashLimit : 10000));
@@ -1390,9 +1391,7 @@ class PlayState extends MusicBeatState
 
 		RecalculateRating();
 
-		// phones: the key events are always listened to, because the extra-keys hitbox types real keys
-		// (onKeyPress ignores them while the normal four-lane controller path is in use)
-		if(!ClientPrefs.controllerMode #if mobile || true #end)
+		if(!ClientPrefs.controllerMode)
 		{
 			FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 			FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
@@ -2952,9 +2951,6 @@ class PlayState extends MusicBeatState
 		// dialogue/cutscenes need A/B, so they get the pad instead of the hitbox
 		if (mobile.MobileControls.instance != null)
 			mobile.MobileControls.instance.cutsceneMode = inCutscene;
-		// extra-keys scripts replace keysArray: keep one touch lane per key
-		if (mobile.MobileControls.instance != null && mobile.MobileControls.instance.hitbox != null)
-			mobile.MobileControls.instance.hitbox.syncLanes(keysArray);
 		#end
 		grpCrossFade.update(elapsed);
 		grpCrossFade.forEachDead(function(img:CrossFade)
@@ -4653,7 +4649,7 @@ class PlayState extends MusicBeatState
 		var eventKey:FlxKey = event.keyCode;
 		var key:Int = getKeyFromEvent(eventKey);
 
-		if (!ClientPrefs.controllerMode || mobileKeyLanes()){
+		if (!ClientPrefs.controllerMode){
 			#if debug
 			// Prevents crash specifically on debug without needing to try catch shit
 			@:privateAccess if (!FlxG.keys._keyListMap.exists(eventKey))
@@ -4666,15 +4662,6 @@ class PlayState extends MusicBeatState
 	}
 
 	public var strumsBlocked:Array<Bool> = [];
-	/** Phones: true while a script (extra keys) has replaced the four keys, so the hitbox lanes type keyboard keys. */
-	inline function mobileKeyLanes():Bool
-	{
-		#if mobile
-		return keysArray.length != 4;
-		#else
-		return false;
-		#end
-	}
 
 	private function keyPressed(key:Int):Void
 	{
@@ -4755,7 +4742,7 @@ class PlayState extends MusicBeatState
 		var key:Int = getKeyFromEvent(eventKey);
 		// trace('Pressed: ' + eventKey);
 
-		if ((!ClientPrefs.controllerMode || mobileKeyLanes()) && key > -1)
+		if ((!ClientPrefs.controllerMode) && key > -1)
 			keyReleased(key);
 	}
 
@@ -5554,7 +5541,7 @@ class PlayState extends MusicBeatState
 
 		stagesFunc(function(stage:BaseStage) stage.destroy());
 
-		if(!ClientPrefs.controllerMode #if mobile || true #end)
+		if(!ClientPrefs.controllerMode)
 		{
 			FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 			FlxG.stage.removeEventListener(KeyboardEvent.KEY_UP, onKeyRelease);

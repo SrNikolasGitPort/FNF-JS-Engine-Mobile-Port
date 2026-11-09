@@ -31,7 +31,7 @@ enum PadMode
 	/** story mode: D-pad + A + B + X (Changers) + Y (Reset) */
 	STORY;
 
-	/** freeplay: D-pad + A + B + X (Changers) + Y (Reset) + C (Listen) */
+	/** freeplay: D-pad + A + B + X (Listen) + Y (Reset) + C (Gameplay Settings) + Z (hold: scroll fast) */
 	FREEPLAY;
 
 	/** lists that only scroll vertically (credits...): up/down + A + B */
@@ -50,6 +50,7 @@ typedef PadConfig =
 	var x:Null<String>;
 	var y:Null<String>;
 	var c:Null<String>;
+	var z:Null<String>;
 	var editors:Bool;
 }
 
@@ -72,22 +73,23 @@ class VirtualPad extends FlxTypedGroup<TouchButton>
 	public var buttonX:TouchButton;
 	public var buttonY:TouchButton;
 	public var buttonC:TouchButton;
+	public var buttonZ:TouchButton;
 
 	public static function configFor(mode:PadMode):PadConfig
 	{
 		return switch (mode)
 		{
-			case NONE: {dpad: 0, a: null, b: null, x: null, y: null, c: null, editors: false};
-			case FULL: {dpad: 1, a: 'OK', b: 'Back', x: null, y: null, c: null, editors: false};
-			case FULL_EXTRA: {dpad: 1, a: 'OK', b: 'Back', x: '', y: '', c: '', editors: false};
-			case AB: {dpad: 0, a: 'OK', b: 'Back', x: null, y: null, c: null, editors: false};
-			case A_ONLY: {dpad: 0, a: 'OK', b: null, x: null, y: null, c: null, editors: false};
-			case DPAD: {dpad: 1, a: null, b: null, x: null, y: null, c: null, editors: false};
-			case MAIN: {dpad: 2, a: 'OK', b: 'Back', x: null, y: null, c: null, editors: true};
-			case STORY: {dpad: 1, a: 'Play', b: 'Back', x: 'Changers', y: 'Reset', c: null, editors: false};
-			case FREEPLAY: {dpad: 1, a: 'Play', b: 'Back', x: 'Changers', y: 'Reset', c: 'Listen', editors: false};
-			case LIST: {dpad: 2, a: 'OK', b: 'Back', x: null, y: null, c: null, editors: false};
-			case RESETTABLE: {dpad: 1, a: 'OK', b: 'Back', x: null, y: 'Reset', c: null, editors: false};
+			case NONE: {dpad: 0, a: null, b: null, x: null, y: null, c: null, z: null, editors: false};
+			case FULL: {dpad: 1, a: 'OK', b: 'Back', x: null, y: null, c: null, z: null, editors: false};
+			case FULL_EXTRA: {dpad: 1, a: 'OK', b: 'Back', x: '', y: '', c: '', z: null, editors: false};
+			case AB: {dpad: 0, a: 'OK', b: 'Back', x: null, y: null, c: null, z: null, editors: false};
+			case A_ONLY: {dpad: 0, a: 'OK', b: null, x: null, y: null, c: null, z: null, editors: false};
+			case DPAD: {dpad: 1, a: null, b: null, x: null, y: null, c: null, z: null, editors: false};
+			case MAIN: {dpad: 2, a: 'OK', b: 'Back', x: null, y: null, c: null, z: null, editors: true};
+			case STORY: {dpad: 1, a: 'Play', b: 'Back', x: 'Changers', y: 'Reset', c: null, z: null, editors: false};
+			case FREEPLAY: {dpad: 1, a: 'Play', b: 'Back', x: 'Listen', y: 'Reset', c: 'Settings', z: 'Fast', editors: false};
+			case LIST: {dpad: 2, a: 'OK', b: 'Back', x: null, y: null, c: null, z: null, editors: false};
+			case RESETTABLE: {dpad: 1, a: 'OK', b: 'Back', x: null, y: 'Reset', c: null, z: null, editors: false};
 		}
 	}
 
@@ -98,8 +100,8 @@ class VirtualPad extends FlxTypedGroup<TouchButton>
 		final cfg = configFor(mode);
 
 		final S = 108; // d-pad button size
-		final cx = 20 + S * 1.5; // d-pad centre x
-		final cy = MobileControls.viewH - 20 - S * 1.5; // d-pad centre y
+		final cx = 28 + S * 1.5; // d-pad centre x
+		final cy = MobileControls.viewH - 28 - S * 1.5; // d-pad centre y
 
 		if (cfg.dpad == 1 || cfg.dpad == 2)
 		{
@@ -112,24 +114,38 @@ class VirtualPad extends FlxTypedGroup<TouchButton>
 			buttonRight = make(cx + S * .5, cy - S * .5, RIGHT, MobileGraphics.arrowButton(S, 3));
 		}
 
-		final R = 128; // face button size
-		final rx = MobileControls.viewW - 20 - R;
-		final ry = MobileControls.viewH - 20 - R;
+		// face buttons: two columns that grow upwards from the bottom-right corner
+		//   col 1 | col 0
+		//   Z     | C
+		//   X     | Y
+		//   B     | A
+		// the right thumb keeps A/B, and holds Z while the left thumb uses the D-pad
+		final R = 112;
+		final margin = 28;
+		final rowGap = 34; // room for the captions that sit above each button
+		inline function slotX(col:Int):Float
+			return MobileControls.viewW - margin - R - col * (R + 16);
+		inline function slotY(row:Int):Float
+			return MobileControls.viewH - margin - R - row * (R + rowGap);
+
 		if (cfg.a != null)
-			buttonA = face(rx, ry - 20, A, 'A', 0xFF2EA043, cfg.a);
+			buttonA = face(slotX(0), slotY(0), A, 'A', 0xFF2EA043, cfg.a, R);
 		if (cfg.b != null)
-			buttonB = face(rx - R - 12, ry + 20, B, 'B', 0xFFD73A49, cfg.b);
-		if (cfg.x != null)
-			buttonX = face(rx - R - 12, ry - R - 4, X, 'X', 0xFF2F81F7, cfg.x);
+			buttonB = face(slotX(1), slotY(0), B, 'B', 0xFFD73A49, cfg.b, R);
 		if (cfg.y != null)
-			buttonY = face(rx, ry - R - 44, Y, 'Y', 0xFFD29922, cfg.y);
+			buttonY = face(slotX(0), slotY(1), Y, 'Y', 0xFFD29922, cfg.y, R);
+		if (cfg.x != null)
+			buttonX = face(slotX(1), slotY(1), X, 'X', 0xFF2F81F7, cfg.x, R);
 		if (cfg.c != null)
-			buttonC = face(rx - R * 2 - 24, ry + 20, C, 'C', 0xFF8957E5, cfg.c);
+			buttonC = face(slotX(0), slotY(2), C, 'C', 0xFF8957E5, cfg.c, R);
+		if (cfg.z != null)
+			buttonZ = face(slotX(1), slotY(2), Z, 'Z', 0xFFE36209, cfg.z, R);
 
 		if (cfg.editors)
 		{
-			// custom wide button that opens the editors (replaces the old unlabeled "X")
-			buttonX = new TouchButton(MobileControls.viewW - 20 - 250, ry - R - 70, X, MobileGraphics.pill(250, 84, 0xFF8957E5));
+			// custom wide button that opens the editors, right above A
+			final w = R * 2 + 16;
+			buttonX = new TouchButton(slotX(1), slotY(1) + (R - 84) / 2, X, MobileGraphics.pill(w, 84, 0xFF8957E5));
 			buttonX.hitPadding = 8;
 			buttonX.setLabel('Editors', 30);
 			add(buttonX);
@@ -138,9 +154,9 @@ class VirtualPad extends FlxTypedGroup<TouchButton>
 		setAlpha(alpha);
 	}
 
-	function face(x:Float, y:Float, id:MobileButtonID, letter:String, color:Int, caption:String):TouchButton
+	function face(x:Float, y:Float, id:MobileButtonID, letter:String, color:Int, caption:String, size:Int):TouchButton
 	{
-		final button = make(x, y, id, MobileGraphics.letterButton(128, letter, color));
+		final button = make(x, y, id, MobileGraphics.letterButton(size, letter, color));
 		button.setLabel(caption, 20, true);
 		return button;
 	}

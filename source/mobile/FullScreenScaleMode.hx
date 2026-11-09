@@ -1,60 +1,78 @@
 package mobile;
 
-import flixel.system.scaleModes.BaseScaleMode;
+import flixel.FlxCamera;
+import flixel.system.scaleModes.RatioScaleMode;
 
 /**
- * "Full Screen": the normal picture, same proportions, no zoom and no cropping, but without black bars.
- * Instead of leaving bars, the game's logical size is made as wide (or tall) as the display, so what you see is
- * the usual screen with a little more scenery on the sides. HUD and strums stay centered.
+ * "Full Screen": the normal 16:9 picture (same layout, same HUD, nothing zoomed or stretched) without black bars.
+ *
+ * The game keeps its 1280x720 coordinates, so the HUD, strums and menus sit exactly where they do in Ratio mode.
+ * What changes is that the world camera of a song (`extend`) and a copy of each menu background (`BarBackdrop`)
+ * are drawn over the area where the black bars would be.
  */
-@:access(flixel.FlxG)
-class FullScreenScaleMode extends BaseScaleMode
+class FullScreenScaleMode extends RatioScaleMode
 {
-	static inline final MIN_ASPECT:Float = 1.2;
-	static inline final MAX_ASPECT:Float = 2.6;
+	/** Extra width / height (game pixels) on each side of the 1280x720 picture, 0 when it already fills the display. */
+	public static var padX(default, null):Int = 0;
+	public static var padY(default, null):Int = 0;
+
+	static final cams:Array<FlxCamera> = [];
+	static final doneX:Array<Int> = [];
+	static final doneY:Array<Int> = [];
+
+	public static var active(get, never):Bool;
+
+	static inline function get_active():Bool
+		return Std.isOfType(FlxG.scaleMode, FullScreenScaleMode);
 
 	override function onMeasure(Width:Int, Height:Int):Void
 	{
-		final oldW = FlxG.width;
-		final oldH = FlxG.height;
-		final iw = FlxG.initialWidth;
-		final ih = FlxG.initialHeight;
-		final aspect = Math.max(MIN_ASPECT, Math.min(MAX_ASPECT, Width / Math.max(1, Height)));
-
-		if (aspect >= iw / ih)
-		{
-			FlxG.width = Math.round(ih * aspect);
-			FlxG.height = ih;
-		}
-		else
-		{
-			FlxG.width = iw;
-			FlxG.height = Math.round(iw / aspect);
-		}
-
-		updateGameSize(Width, Height);
-		updateDeviceSize(Width, Height);
-		updateScaleOffset();
-		updateGamePosition();
-
-		// cameras made for the previous logical size follow the new one
-		if (oldW != FlxG.width || oldH != FlxG.height)
-		{
-			for (cam in FlxG.cameras.list)
-			{
-				if (cam != null && cam.width == oldW && cam.height == oldH)
-				{
-					cam.width = FlxG.width;
-					cam.height = FlxG.height;
-				}
-			}
-		}
+		super.onMeasure(Width, Height);
+		padX = Std.int(Math.max(0, Math.ceil((Width / scale.x - FlxG.width) / 2)));
+		padY = Std.int(Math.max(0, Math.ceil((Height / scale.y - FlxG.height) / 2)));
+		refresh();
 	}
 
-	override function updateGameSize(Width:Int, Height:Int):Void
+	/** The mode was replaced by another one: give every camera its normal size back. */
+	public static function deactivate():Void
 	{
-		final scale = Math.min(Width / FlxG.width, Height / FlxG.height);
-		gameSize.x = Math.round(FlxG.width * scale);
-		gameSize.y = Math.round(FlxG.height * scale);
+		padX = padY = 0;
+		refresh();
+	}
+
+	/** Makes `cam` (a world camera that fills the whole game) cover the area of the black bars too. */
+	public static function extend(cam:FlxCamera):Void
+	{
+		if (cam == null || cams.contains(cam))
+			return;
+		cams.push(cam);
+		doneX.push(0);
+		doneY.push(0);
+		refresh();
+	}
+
+	static function refresh():Void
+	{
+		var i = cams.length;
+		while (i-- > 0)
+		{
+			final cam = cams[i];
+			if (cam == null || !cam.exists || !FlxG.cameras.list.contains(cam))
+			{
+				cams.splice(i, 1);
+				doneX.splice(i, 1);
+				doneY.splice(i, 1);
+				continue;
+			}
+			cam.x = -padX;
+			cam.y = -padY;
+			cam.width = FlxG.width + padX * 2;
+			cam.height = FlxG.height + padY * 2;
+			// a camera that is not following something keeps showing the same part of the world
+			cam.scroll.x += doneX[i] - padX;
+			cam.scroll.y += doneY[i] - padY;
+			doneX[i] = padX;
+			doneY[i] = padY;
+		}
 	}
 }

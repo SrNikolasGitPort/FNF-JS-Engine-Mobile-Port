@@ -194,7 +194,7 @@ class FreeplayState extends MusicBeatState
     var leText:String = "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy.";
     var size:Int = 16;
     #else
-    var leText:String = "Press C to open the Gameplay Changers Menu / Press Y to Reset your Score and Accuracy.";
+    var leText:String = "X: listen to the song / C: Gameplay Settings / Y: reset your score / hold Z + Up or Down: scroll fast";
     var size:Int = 18;
     #end
     bottomString = leText;
@@ -437,11 +437,12 @@ class FreeplayState extends MusicBeatState
     var upP = controls.UI_UP_P;
     var downP = controls.UI_DOWN_P;
     var accepted = controls.ACCEPT;
-    var space = FlxG.keys.justPressed.SPACE || mobileJustPressed(C); // C: preview the song
-    var ctrl = FlxG.keys.justPressed.CONTROL || mobileJustPressed(X); // X: gameplay changers
+    var space = FlxG.keys.justPressed.SPACE || mobileJustPressed(X); // X: listen to the song
+    var ctrl = FlxG.keys.justPressed.CONTROL || mobileJustPressed(C); // C: gameplay settings
 
     var shiftMult:Int = 1;
     if (FlxG.keys.pressed.SHIFT) shiftMult = 3;
+    if (mobilePressed(Z)) shiftMult = 6; // Z held: scroll fast with up / down
 
     try
     {

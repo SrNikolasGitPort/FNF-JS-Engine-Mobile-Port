@@ -26,7 +26,8 @@ enum abstract MobileButtonID(Int) from Int to Int
 	var PAUSE = 12;
 	var BOT_ENERGY = 13;
 	var C = 14;
-	var TOTAL = 15;
+	var Z = 15;
+	var TOTAL = 16;
 }
 
 /**

@@ -19,7 +19,7 @@ Only the shared storage is used. If you deny the permission the game waits on th
 ## Controls
 Every screen only shows the buttons it uses, with a caption on each one.
 - **Intro and title screen:** no buttons, tap anywhere to skip / start.
-- **Menus:** D-pad, **A** (OK) and **B** (Back). The Main Menu also has an **Editors** button; Story Mode and Freeplay add **Changers** (X), **Reset** (Y) and, in Freeplay, **Listen** (C); Options, Achievements and Note Offset have **Reset**.
+- **Menus:** D-pad, **A** (OK) and **B** (Back). The Main Menu also has an **Editors** button; Story Mode adds **Changers** (X) and **Reset** (Y). Freeplay has **Listen** (X), **Gameplay Settings** (C), **Reset** (Y) and **Z**: hold it while pressing up/down to scroll the song list fast (the buttons sit in two columns at the bottom right, A/B at the bottom); Options, Achievements and Note Offset have **Reset**.
 - **Songs:** the screen is split into four lanes (the hitbox). Hold a lane for sustain notes, slide a finger between lanes, use as many fingers as you want. The pause button sits in the right black bar when your phone is wider than 16:9 (Bot Energy goes in the left one); on a 16:9 screen it stays in the top-right corner.
 - **Editors:** a grid of keyboard keys (Space, W/A/S/D, arrows, Enter, Esc, Tab, Ctrl/Shift/Alt...) is shown at the bottom right, different for each editor. Ctrl / Shift / Alt are sticky: tap once to hold, again to release. The **Keys** tab hides/shows the grid. The Android Back gesture works as Esc.
 - The Android **Back** button/gesture goes back in menus and pauses in songs.
@@ -28,6 +28,7 @@ Every screen only shows the buttons it uses, with a caption on each one.
 ## Mobile Options (Options → Mobile Options)
 | Option | What it does |
 |---|---|
+| Screen | **Ratio**: normal 16:9, black bars on wide phones. **Full Screen**: same picture, HUD and menus in the same place as Ratio, but the scenery (stage / menu background) fills the bars, so there are no black bars and nothing is zoomed or cut. **Stretched**: distorts the picture to fill the display |
 | Pad Opacity | how visible the menu buttons are |
 | Hitbox Opacity | how visible the lanes are (0% = invisible but still working) |
 | Hitbox Style | Gradient / Flat / Outline |
@@ -35,7 +36,6 @@ Every screen only shows the buttons it uses, with a caption on each one.
 | Hide Hitbox Hints | never draw the lanes (they keep working) |
 | Extra Button | Bot Energy button during songs |
 | Vibration | short vibration on every press |
-| Screen | **Ratio**: normal 16:9, black bars on wide phones. **Full Screen**: the normal picture without black bars, no zoom and nothing cut (the game just shows a bit more scenery on the sides; reopen the current screen to see it fully). **Stretched**: distorts the picture to fill the display |
 
 A small hitbox preview is shown in the top-right corner while you change the options.
 
@@ -63,9 +63,3 @@ haxelib run lime build android -armv7 -arm64 -release
 A USB or Bluetooth keyboard works everywhere (menus, songs, editors). Open **Options > Controls** to set your own keys, the same screen as on a computer: pick an action with the D-pad + A, press the new key on the keyboard, press B to cancel. Keys are saved with the other options.
 
 The FPS / memory counter is kept away from the screen corner so notches and rounded corners do not hide it.
-
-## Extra Keys (1k–18k) on Android
-
-- Songs that use the **Extra Keys** Lua script get one touch lane per key automatically: the hitbox rebuilds itself whenever the script changes the key count (including mid-song "Change Mania" events). Each lane types the key the script assigned to it, so scripts keep working through `onKeyPress` / `onKeyRelease` like on a computer.
-- The script reads `extraKeys<count> <lane>` binds, normally created by the "rebind controls" song. The Android script creates all of them (1k–18k) by itself, so no rebind song is needed.
-- Use `docs/scripts/extra_keys_mobile.lua`: it is the original script with the key-name popup above the strums skipped on Android (`buildTarget == 'android'`). Put it in your mod's `scripts` folder instead of the original.

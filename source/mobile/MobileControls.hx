@@ -47,6 +47,9 @@ class MobileControls
 		if (ClientPrefs.mobileScaleMode == 'Fill') // old name of "Stretched"
 			ClientPrefs.mobileScaleMode = 'Stretched';
 
+		if (ClientPrefs.mobileScaleMode != 'Full Screen')
+			FullScreenScaleMode.deactivate();
+
 		switch (ClientPrefs.mobileScaleMode)
 		{
 			case 'Stretched':
@@ -102,6 +105,12 @@ class MobileControls
 			withHitbox = beat.mobileHitbox;
 		}
 		attach(state, padMode, withHitbox);
+
+		// Full Screen: fill the area next to the game
+		if (Std.isOfType(state, PlayState))
+			mobile.objects.BarBackdrop.fixFixedSprites(state, PlayState.instance.camGame);
+		else
+			mobile.objects.BarBackdrop.attach(state);
 	}
 
 	/** Editors have no pad: they get a grid of keyboard keys instead (see `KeyPad`). */
