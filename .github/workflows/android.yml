@@ -197,6 +197,12 @@ jobs:
           name: android-apk
           path: out/${{ env.APK_NAME }}
 
+      - name: Move the MobilePort tag to this commit (so "Source code" in the release matches the APK)
+        if: ${{ github.event_name == 'push' && github.ref_type == 'branch' }}
+        run: |
+          git tag -f MobilePort "$GITHUB_SHA"
+          git push -f origin refs/tags/MobilePort
+
       - name: Publish release (APK only)
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.publish }}
         uses: softprops/action-gh-release@v2
