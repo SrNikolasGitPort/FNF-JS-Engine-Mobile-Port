@@ -98,6 +98,30 @@ jobs:
           haxe compile.hxml
           cd ../../../../..
 
+      # 32-bit fix: with armv7 the code uses emulated thread-locals, which need __emutls_get_address. The linker resolved it
+      # against the libc stub, but many 32-bit phones do not export it, so the app died at start with
+      # "dlopen failed: cannot locate symbol __emutls_get_address". Link the static copy from compiler-rt instead.
+      - name: Link emutls statically for armv7
+        run: |
+          RT=$(find "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt" -name 'libclang_rt.builtins-arm-android.a' | head -n 1)
+          echo "compiler-rt: $RT"
+          test -n "$RT"
+          TC=.haxelib/hxcpp/git/toolchain/android-toolchain-clang.xml
+          python3 - "$TC" "$RT" <<'PY'
+          import sys
+          p, rt = sys.argv[1], sys.argv[2]
+          s = open(p).read()
+          marker = '<flag value ="-shared" />'
+          assert marker in s, "dll linker not found"
+          add = marker + '\n  <section if="HXCPP_ARMV7">\n    <flag value="-Wl,-u,__emutls_get_address" />\n    <flag value="' + rt + '" />\n  </section>'
+          if '__emutls_get_address' not in s:
+              s = s.replace(marker, add, 1)
+          open(p, 'w').write(s)
+          PY
+          grep -n "emutls" -B2 -A3 "$TC"
+          # cached 32-bit libraries were linked the old way: drop them so they are linked again from the cached objects
+          find .haxelib/lime/git/ndll/Android build/release/android -name '*-v7.so' -print -delete 2>/dev/null || true
+
       - name: Configure Lime for Android
         run: |
           haxelib run lime config ANDROID_SDK "$ANDROID_HOME"
