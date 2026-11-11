@@ -12,7 +12,8 @@
       },
       {
         "name": "flixel",
-        "link": "https://github.com/JS-Engine-things/flixel-JS-Engine"
+        "link": "https://github.com/JS-Engine-things/flixel-JS-Engine",
+        "branch": "baa47998542eab29f4a9cc02a0283d6120d6b1ef"
       },
       {
         "name": "flixel-addons",
