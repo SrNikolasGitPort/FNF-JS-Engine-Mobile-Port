@@ -105,10 +105,15 @@ class BarBackdrop extends FlxSprite
 		final py = FullScreenScaleMode.padY;
 		if (!FullScreenScaleMode.active || (px <= 0 && py <= 0))
 			return;
-		walk(state, cam, px, py);
+		walk(state, cam, px, py, true);
 	}
 
-	static function walk(group:FlxGroup, cam:FlxCamera, px:Int, py:Int):Void
+	/**
+	 * `onCam`: whether the objects of this group are drawn on `cam`. A group (or a sprite) that has its own `cameras`
+	 * decides for itself (the strums, health bar etc. are put on the HUD camera through their group, so they must be
+	 * left alone); everything else uses the default camera, which is the world camera in a song.
+	 */
+	static function walk(group:FlxGroup, cam:FlxCamera, px:Int, py:Int, onCam:Bool):Void
 	{
 		for (member in group.members)
 		{
@@ -116,11 +121,16 @@ class BarBackdrop extends FlxSprite
 				continue;
 			if (Std.isOfType(member, FlxGroup))
 			{
-				walk(cast member, cam, px, py);
+				final g:FlxGroup = cast member;
+				final own = g.cameras != null && g.cameras.length > 0;
+				walk(g, cam, px, py, own ? g.cameras.contains(cam) : onCam);
 				continue;
 			}
 			final spr:FlxSprite = Std.isOfType(member, FlxSprite) ? cast member : null;
-			if (spr == null || spr.camera != cam)
+			if (spr == null)
+				continue;
+			final own = spr.cameras != null && spr.cameras.length > 0;
+			if (!(own ? spr.cameras.contains(cam) : onCam))
 				continue;
 			if (spr.scrollFactor.x == 0 && spr.frames != null && Math.abs(spr.frameWidth * spr.scale.x) >= FlxG.width * 0.9)
 			{

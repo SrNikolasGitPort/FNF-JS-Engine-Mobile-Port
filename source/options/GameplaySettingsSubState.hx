@@ -75,7 +75,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
     addOption(option);
 
     final option:Option = new Option('Perfect! Hit Window', 'Changes the amount of time you have\nfor hitting a "Perfect!" in milliseconds.', 'perfectWindow',
-      'float', 22.0);
+      'float', 15.0);
     option.displayFormat = '%vms';
     option.scrollSpeed = 15;
     option.minValue = 1.0;

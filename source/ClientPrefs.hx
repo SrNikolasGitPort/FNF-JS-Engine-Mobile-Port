@@ -336,6 +336,14 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 		}
 
 		#if mobile
+		// one-time reset: the Perfect! window could end up at a wrong value (e.g. 11ms) after scrolling the option with touch
+		if (FlxG.save.data.perfectWindowFixed != true)
+		{
+			perfectWindow = 15.0;
+			FlxG.save.data.perfectWindow = 15.0;
+			FlxG.save.data.perfectWindowFixed = true;
+			FlxG.save.flush();
+		}
 		// the touch hitbox is read through Controls like a gamepad, never through keyboard events
 		controllerMode = true;
 		#end
