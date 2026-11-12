@@ -580,16 +580,33 @@ class ChartingState extends MusicBeatState
     songSlider.minLabel.visible = false;
     add(songSlider);
     songSlider.scrollFactor.set();
-    songSlider.callback = function(_:Float)
-    {
-      var t:Float = FlxG.sound.music.time; // slider already wrote this
-      if (vocals != null) vocals.time = t;
-      if (opponentVocals != null) opponentVocals.time = t;
-      Conductor.songPosition = t;
+    songSlider.callback = function(fuck:Float) {
+      vocals.time = opponentVocals.time = FlxG.sound.music.time;
+      var shit = Std.int(FlxG.sound.music.time / (Conductor.crochet * 4)); // TODO uhh make this work properly with bpm changes or somethin
 
-      var sec:Int = getSectionAtTime(t);
-      if (sec != curSec) changeSection(sec, false); // false = don't re-seek to the section start
-      updateCurStep();
+      if (Conductor.bpmChangeMap.length > 0)
+      {
+        var foundSection:Bool = false;
+        var sec:Int = 1;
+        var lastSecStartTime:Float = 0;
+        while (!foundSection)
+        {
+          var secStartTime = sectionStartTime(sec);
+          if (FlxG.sound.music.time >= lastSecStartTime && FlxG.sound.music.time <= secStartTime)
+          {
+            shit = sec;
+            foundSection = true;
+          } else if (secStartTime >= FlxG.sound.music.length)
+          {
+            shit = 0;
+            foundSection = true;
+          }
+          sec++;
+          lastSecStartTime = secStartTime;
+        }
+      }
+
+      changeSection(shit);
     };
 
     if (lastSong != currentSongName)
@@ -761,10 +778,7 @@ class ChartingState extends MusicBeatState
     }
     #end
 
-    //We only need to make the labels once.
-    var charLabels = FlxUIDropDownMenuCustom.makeStrIdLabelArray(characters, true);
-
-    var player1DropDown = new FlxUIDropDownMenuCustom(10, stepperSpeed.y + 45, charLabels,
+    var player1DropDown = new FlxUIDropDownMenuCustom(10, stepperSpeed.y + 45, FlxUIDropDownMenuCustom.makeStrIdLabelArray(characters, true),
       function(character:String) {
         _song.player1 = characters[Std.parseInt(character)];
         updateJsonData();
@@ -774,7 +788,7 @@ class ChartingState extends MusicBeatState
     blockPressWhileScrolling.push(player1DropDown);
 
     var gfVersionDropDown = new FlxUIDropDownMenuCustom(player1DropDown.x, player1DropDown.y + 40,
-      charLabels, function(character:String) {
+      FlxUIDropDownMenuCustom.makeStrIdLabelArray(characters, true), function(character:String) {
         _song.gfVersion = characters[Std.parseInt(character)];
         updateJsonData();
         updateHeads();
@@ -783,7 +797,7 @@ class ChartingState extends MusicBeatState
     blockPressWhileScrolling.push(gfVersionDropDown);
 
     var player2DropDown = new FlxUIDropDownMenuCustom(player1DropDown.x, gfVersionDropDown.y + 40,
-      charLabels, function(character:String) {
+      FlxUIDropDownMenuCustom.makeStrIdLabelArray(characters, true), function(character:String) {
         _song.player2 = characters[Std.parseInt(character)];
         updateJsonData();
         updateHeads();
@@ -1038,6 +1052,7 @@ class ChartingState extends MusicBeatState
   var check_altAnim:FlxUICheckBox;
   var check_crossFade:FlxUICheckBox;
 
+  var sectionToCopy:Int = 0;
   var notesCopied:Array<Dynamic>;
   var CopyLastSectionCount:FlxUINumericStepper;
   var CopyFutureSectionCount:FlxUINumericStepper;
@@ -1094,54 +1109,69 @@ class ChartingState extends MusicBeatState
     var check_notesSec:FlxUICheckBox = null;
     var copyButton:FlxButton = new FlxButton(10, 190, "Copy Section", function() {
       notesCopied = [];
-      var srcStart:Float = secStartAbs(curSec);
-      var srcEnd:Float = secStartAbs(curSec + 1);
-      var msPerBeat:Float = 60000 / secBPM(curSec);
-
-      for (note in _song.notes[curSec].sectionNotes)
+      sectionToCopy = curSec;
+      for (i in 0..._song.notes[curSec].sectionNotes.length)
       {
-        var c:Array<Dynamic> = note.copy();
-        c[0] = (note[0] - srcStart) / msPerBeat; // beats from section start
-        if (c[2] != null) c[2] = note[2] / msPerBeat; // sustain in beats
-        notesCopied.push(c);
+        var note:Array<Dynamic> = _song.notes[curSec].sectionNotes[i];
+        notesCopied.push(note);
       }
 
+      var startThing:Float = sectionStartTime();
+      var endThing:Float = sectionStartTime(1);
       for (event in _song.events)
       {
-        if (event[0] >= srcStart && event[0] < srcEnd)
+        var strumTime:Float = event[0];
+        if (endThing > event[0] && event[0] >= startThing)
         {
-          var arr:Array<Dynamic> = [];
-          for (e in cast(event[1], Array<Dynamic>)) arr.push([e[0], e[1], e[2]]);
-          notesCopied.push([(event[0] - srcStart) / msPerBeat, -1, arr]);
+          var copiedEventArray:Array<Dynamic> = [];
+          for (i in 0...event[1].length)
+          {
+            var eventToPush:Array<Dynamic> = event[1][i];
+            copiedEventArray.push([eventToPush[0], eventToPush[1], eventToPush[2]]);
+          }
+          notesCopied.push([strumTime, -1, copiedEventArray]);
         }
       }
     });
 
     var pasteButton:FlxButton = new FlxButton(copyButton.x + 100, copyButton.y, "Paste Section", function() {
-      if (notesCopied == null || notesCopied.length < 1) return;
-      saveUndo(_song);
+      if (notesCopied == null || notesCopied.length < 1)
+      {
+        return;
+      }
 
-      var dstStart:Float = secStartAbs(curSec);
-      var msPerBeat:Float = 60000 / secBPM(curSec);
+      var addToTime:Float = Conductor.stepCrochet * (getSectionBeats() * 4 * (curSec - sectionToCopy));
+      // trace('Time to add: ' + addToTime);
 
       for (note in notesCopied)
       {
-        var newStrumTime:Float = dstStart + note[0] * msPerBeat;
+        var copiedNote:Array<Dynamic> = [];
+        var newStrumTime:Float = note[0] + addToTime;
         if (note[1] < 0)
         {
           if (check_eventsSec.checked)
           {
-            var arr:Array<Dynamic> = [];
-            for (e in cast(note[2], Array<Dynamic>)) arr.push([e[0], e[1], e[2]]);
-            _song.events.push([newStrumTime, arr]);
+            var copiedEventArray:Array<Dynamic> = [];
+            for (i in 0...note[2].length)
+            {
+              var eventToPush:Array<Dynamic> = note[2][i];
+              copiedEventArray.push([eventToPush[0], eventToPush[1], eventToPush[2]]);
+            }
+            _song.events.push([newStrumTime, copiedEventArray]);
           }
-        }
-        else if (check_notesSec.checked)
+        } else
         {
-          var c:Array<Dynamic> = note.copy();
-          c[0] = newStrumTime;
-          if (c[2] != null) c[2] = note[2] * msPerBeat;
-          _song.notes[curSec].sectionNotes.push(c);
+          if (check_notesSec.checked)
+          {
+            if (note[4] != null)
+            {
+              copiedNote = [newStrumTime, note[1], note[2], note[3], note[4]];
+            } else
+            {
+              copiedNote = [newStrumTime, note[1], note[2], note[3]];
+            }
+            _song.notes[curSec].sectionNotes.push(copiedNote);
+          }
         }
       }
       updateGrid(false);
@@ -1174,9 +1204,9 @@ class ChartingState extends MusicBeatState
     clearSectionButton.color = FlxColor.RED;
     clearSectionButton.label.color = FlxColor.WHITE;
 
-    check_notesSec = new FlxUICheckBox(10, clearSectionButton.y + 25, null, null, "Notes", 60);
+    check_notesSec = new FlxUICheckBox(10, clearSectionButton.y + 25, null, null, "Notes", 100);
     check_notesSec.checked = true;
-    check_eventsSec = new FlxUICheckBox(check_notesSec.x + 100, check_notesSec.y, null, null, "Events", 60);
+    check_eventsSec = new FlxUICheckBox(check_notesSec.x + 100, check_notesSec.y, null, null, "Events", 100);
     check_eventsSec.checked = true;
 
     var swapSection:FlxButton = new FlxButton(10, check_notesSec.y + 40, "Swap section", function() {
@@ -1198,36 +1228,36 @@ class ChartingState extends MusicBeatState
       var daSec = FlxMath.maxInt(curSec, value);
       if (_song.notes[daSec - value] == null || _song.notes[daSec] == null) return;
 
-      var srcSec:Int = daSec - value;
-      var srcStart:Float = secStartAbs(srcSec);
-      var srcEnd:Float = secStartAbs(srcSec + 1);
-      var dstStart:Float = secStartAbs(daSec);
-      var ratio:Float = secBPM(srcSec) / secBPM(daSec);
-
-      if (check_notesSec.checked)
+      if (check_notesSec.checked && _song.notes[daSec - value] != null)
       {
-        for (note in _song.notes[srcSec].sectionNotes)
+        for (note in _song.notes[daSec - value].sectionNotes)
         {
-          var c:Array<Dynamic> = note.copy();
-          c[0] = dstStart + (note[0] - srcStart) * ratio;
-          if (c[2] != null) c[2] = note[2] * ratio;
-          _song.notes[daSec].sectionNotes.push(c);
+          var strum = note[0] + Conductor.stepCrochet * (getSectionBeats(daSec) * 4 * value);
+
+          var copiedNote:Array<Dynamic> = [strum, note[1], note[2], note[3]];
+          _song.notes[daSec].sectionNotes.push(copiedNote);
         }
       }
 
-      if (check_eventsSec.checked)
+      if (check_eventsSec.checked && _song.notes[daSec - value] != null)
       {
-        var newEvents:Array<Dynamic> = []; // collect first so we don't iterate a list we're pushing into
+        var startThing:Float = sectionStartTime(-value);
+        var endThing:Float = sectionStartTime(-value + 1);
         for (event in _song.events)
         {
-          if (event[0] >= srcStart && event[0] < srcEnd)
+          var strumTime:Float = event[0];
+          if (endThing > event[0] && event[0] >= startThing)
           {
-            var arr:Array<Dynamic> = [];
-            for (e in cast(event[1], Array<Dynamic>)) arr.push([e[0], e[1], e[2]]);
-            newEvents.push([dstStart + (event[0] - srcStart) * ratio, arr]);
+            strumTime += Conductor.stepCrochet * (getSectionBeats(daSec) * 4 * value);
+            var copiedEventArray:Array<Dynamic> = [];
+            for (i in 0...event[1].length)
+            {
+              var eventToPush:Array<Dynamic> = event[1][i];
+              copiedEventArray.push([eventToPush[0], eventToPush[1], eventToPush[2]]);
+            }
+            _song.events.push([strumTime, copiedEventArray]);
           }
         }
-        for (ev in newEvents) _song.events.push(ev);
       }
       updateGrid(false);
     });
@@ -1274,24 +1304,31 @@ class ChartingState extends MusicBeatState
         // duetNotes.push(copiedNote);
       }
 
+      for (i in duetNotes)
+      {
+        // _song.notes[curSec].sectionNotes.push(i);
+      }
+
       updateGrid(false);
     });
     var clearLeftSectionButton:FlxButton = new FlxButton(duetButton.x, duetButton.y + 30, "Clear Left Side", function() {
-      if (_song.notes[curSec] == null || _song.notes[curSec] != null && _song.notes[curSec].sectionNotes == null) return;
+      if (Conductor.songPosition >= 0) curSection = Math.floor(Conductor.songPosition / (Conductor.stepCrochet * 16));
+
+      if (_song.notes[curSection] == null || _song.notes[curSection] != null && _song.notes[curSection].sectionNotes == null) return;
       saveUndo(_song); // this is really weird so im saving it as an undoable action just in case it does the wrong section
       var removeThese = [];
-      for (noteIndex in 0..._song.notes[curSec].sectionNotes.length)
+      for (noteIndex in 0..._song.notes[curSection].sectionNotes.length)
       {
-        if (_song.notes[curSec].sectionNotes[noteIndex][1] < 4)
+        if (_song.notes[curSection].sectionNotes[noteIndex][1] < 4)
         {
-          removeThese.push(_song.notes[curSec].sectionNotes[noteIndex]);
+          removeThese.push(_song.notes[curSection].sectionNotes[noteIndex]);
         }
       }
       if (removeThese != [])
       {
         for (x in removeThese)
         {
-          _song.notes[curSec].sectionNotes.remove(x);
+          _song.notes[curSection].sectionNotes.remove(x);
         }
       }
 
@@ -1299,21 +1336,23 @@ class ChartingState extends MusicBeatState
       updateNoteUI();
     });
     var clearRightSectionButton:FlxButton = new FlxButton(clearLeftSectionButton.x + 100, clearLeftSectionButton.y, "Clear Right Side", function() {
-      if (_song.notes[curSec] == null || _song.notes[curSec] != null && _song.notes[curSec].sectionNotes == null) return;
+      if (Conductor.songPosition >= 0) curSection = Math.floor(Conductor.songPosition / (Conductor.stepCrochet * 16));
+
+      if (_song.notes[curSection] == null || _song.notes[curSection] != null && _song.notes[curSection].sectionNotes == null) return;
       saveUndo(_song); // this is really weird so im saving it as an undoable action just in case it does the wrong section
       var removeThese = [];
-      for (noteIndex in 0..._song.notes[curSec].sectionNotes.length)
+      for (noteIndex in 0..._song.notes[curSection].sectionNotes.length)
       {
-        if (_song.notes[curSec].sectionNotes[noteIndex][1] >= 4)
+        if (_song.notes[curSection].sectionNotes[noteIndex][1] >= 4)
         {
-          removeThese.push(_song.notes[curSec].sectionNotes[noteIndex]);
+          removeThese.push(_song.notes[curSection].sectionNotes[noteIndex]);
         }
       }
       if (removeThese != [])
       {
         for (x in removeThese)
         {
-          _song.notes[curSec].sectionNotes.remove(x);
+          _song.notes[curSection].sectionNotes.remove(x);
         }
       }
 
@@ -1345,57 +1384,69 @@ class ChartingState extends MusicBeatState
     CopyLoopCount = new FlxUINumericStepper(CopyFutureSectionCount.x - 60, CopyLastSectionCount.y + 40, 1, 1, -16384, 16384, 0);
     blockPressWhileTypingOnStepper.push(CopyLoopCount);
 
-    copyMultiSectButton = new FlxButton(CopyFutureSectionCount.x, CopyLastSectionCount.y + 40,
-    "Copy from the last " + Std.int(CopyLastSectionCount.value)
-    + " to the next " + Std.int(CopyFutureSectionCount.value)
-    + " sections, " + Std.int(CopyLoopCount.value) + " times",
-    function() {
-      var swapNotes:Bool = FlxG.keys.pressed.CONTROL;
-      var value1:Int = Std.int(CopyLastSectionCount.value);
-      var value2:Int = Std.int(CopyFutureSectionCount.value) * Std.int(CopyLoopCount.value);
-      if (value1 == 0 || !check_notesSec.checked) return;
-
-      saveUndo(_song);
-
-      for (i in 0...value2)
-      {
-        // Source/destination are always relative to the section we're currently in
-        var srcSec:Int = curSec - value1;
-        if (srcSec < 0 || _song.notes[srcSec] == null)
+    copyMultiSectButton = new FlxButton(CopyFutureSectionCount.x, CopyLastSectionCount.y
+      + 40,
+      "Copy from the last "
+      + Std.int(CopyFutureSectionCount.value)
+      + " to the next "
+      + Std.int(CopyFutureSectionCount.value)
+      + " sections, "
+      + Std.int(CopyLoopCount.value)
+      + " times",
+      function() {
+        var swapNotes:Bool = FlxG.keys.pressed.CONTROL;
+        var daSec = FlxMath.maxInt(curSec, Std.int(CopyLastSectionCount.value));
+        var value1:Int = Std.int(CopyLastSectionCount.value);
+        var value2:Int = Std.int(CopyFutureSectionCount.value) * Std.int(CopyLoopCount.value);
+        if (value1 == 0)
         {
-          trace("The section obtained from value 1 would cause the game to copy notes from a section that doesn't exist.");
-          break;
+          return;
         }
-
-        var srcStart:Float = secStartAbs(srcSec);
-        var dstStart:Float = secStartAbs(curSec);
-        var ratio:Float = secBPM(srcSec) / secBPM(curSec);
-
-        for (note in _song.notes[srcSec].sectionNotes)
+        if (_song.notes[curSection] != null && Math.isNaN(_song.notes[daSec].sectionNotes.length))
         {
-          var data = note[1];
-          if (swapNotes) data = Std.int(note[1] + 4) % 8;
-          var sus:Dynamic = (note[2] != null) ? note[2] * ratio : note[2];
-          _song.notes[curSec].sectionNotes.push([dstStart + (note[0] - srcStart) * ratio, data, sus, note[3], note[4]]);
+          trace("HEY! your section doesn't have any notes! please place at least 1 note then try using this.");
+          return; // prevent a crash if the section doesn't have any notes
         }
+        saveUndo(_song); // I don't even know why.
 
-        if (sectionStartTime(1) > FlxG.sound.music.length)
+        if (check_notesSec.checked)
         {
-          trace('Last possible section reached!');
-          break;
-        }
-        if (_song.notes[curSec + 1] == null)
-        {
-          addSection(getSectionBeats());
-        }
-        changeSection(curSec + 1, true, false);
+          for (i in 0...value2)
+          {
+            if (curSection - value1 < 0)
+            {
+              trace("The number you put for value 1 would cause the game to copy notes from a negative section.");
+              break;
+            }
+            for (note in _song.notes[daSec - value1].sectionNotes)
+            {
+              var strum = note[0] + Conductor.stepCrochet * (getSectionBeats(daSec - value1) * 4 * value1);
 
-        // Feel free to comment this out.
-        trace('Loops Remaining: ' + (value2 - i) + ', current note count: '
-          + FlxStringUtil.formatMoney(CoolUtil.getNoteAmount(_song), false) + ' Notes');
-      }
-      changeSection(curSec); //refresh the grid
-    });
+              var data = note[1];
+              if (swapNotes) data = Std.int(note[1] + 4) % 8;
+              var copiedNote:Array<Dynamic> = [strum, data, note[2], note[3]];
+              inline _song.notes[daSec].sectionNotes.push(copiedNote);
+            }
+            if (sectionStartTime(1) > FlxG.sound.music.length)
+            {
+              trace('Last possible section reached!');
+              break;
+            }
+            if (_song.notes[curSec + 1] == null)
+            {
+              addSection(getSectionBeats());
+            }
+            changeSection(curSec + 1);
+            daSec = FlxMath.maxInt(curSec, Std.int(CopyLastSectionCount.value) - 1);
+            // Feel free to comment this out.
+            trace('Loops Remaining: '
+              + (value2 - i)
+              + ', current note count: '
+              + FlxStringUtil.formatMoney(CoolUtil.getNoteAmount(_song), false)
+              + ' Notes');
+          }
+        }
+      });
     copyMultiSectButton.color = FlxColor.BLUE;
     copyMultiSectButton.label.color = FlxColor.WHITE;
     copyMultiSectButton.setGraphicSize(Std.int(copyMultiSectButton.width), Std.int(copyMultiSectButton.height));
@@ -1428,17 +1479,14 @@ class ChartingState extends MusicBeatState
         }
         if (_song.notes[curSec + 1] == null) addSection(getSectionBeats());
         changeSection(curSec + 1);
-        var srcSec:Int = curSec - 1;
-        var srcStart:Float = secStartAbs(srcSec);
-        var dstStart:Float = secStartAbs(curSec);
-        var ratio:Float = secBPM(srcSec) / secBPM(curSec);
-
-        for (note in _song.notes[srcSec].sectionNotes)
+        for (note in _song.notes[curSec - 1].sectionNotes)
         {
+          var strum = note[0] + Conductor.stepCrochet * (getSectionBeats(curSec - 1) * 4);
+
           var data = note[1];
           if (swapNotes) data = Std.int(note[1] + 4) % 8;
-          var sus:Dynamic = (note[2] != null) ? note[2] * ratio : note[2];
-          _song.notes[curSec].sectionNotes.push([dstStart + (note[0] - srcStart) * ratio, data, sus, note[3], note[4]]);
+          var copiedNote:Array<Dynamic> = [strum, data, note[2], note[3]];
+          _song.notes[curSec].sectionNotes.push(copiedNote);
         }
       }
       updateGrid(false);
@@ -1627,7 +1675,7 @@ class ChartingState extends MusicBeatState
     });
     blockPressWhileScrolling.push(noteTypeDropDown);
 
-    var leftSectionNotetype:FlxButton = new FlxButton(noteTypeDropDown.x, noteTypeDropDown.y + 40, "Left Side to Notetype", function() {
+    var leftSectionNotetype:FlxButton = new FlxButton(noteTypeDropDown.x, noteTypeDropDown.y + 40, "Left Section to Notetype", function() {
       for (i in 0..._song.notes[curSec].sectionNotes.length)
       {
         var note:Array<Dynamic> = _song.notes[curSec].sectionNotes[i];
@@ -1639,7 +1687,7 @@ class ChartingState extends MusicBeatState
       }
       updateGrid(false);
     });
-    var rightSectionNotetype:FlxButton = new FlxButton(leftSectionNotetype.x + 90, leftSectionNotetype.y, "Right Side to Notetype", function() {
+    var rightSectionNotetype:FlxButton = new FlxButton(leftSectionNotetype.x + 90, leftSectionNotetype.y, "Right Section to Notetype", function() {
       for (i in 0..._song.notes[curSec].sectionNotes.length)
       {
         var note:Array<Dynamic> = _song.notes[curSec].sectionNotes[i];
@@ -1762,7 +1810,7 @@ class ChartingState extends MusicBeatState
     var shiftNotesButton:FlxButton = new FlxButton(10, stepperShiftSteps.y + 20, "Shift Notes", function() {
       for (i in 0..._song.notes[curSec].sectionNotes.length)
       {
-        _song.notes[curSec].sectionNotes[i][0] += (stepperShiftSteps.value) * (15000 / secBPM(curSec));
+        _song.notes[curSec].sectionNotes[i][0] += (stepperShiftSteps.value) * (15000 / Conductor.bpm);
       }
       updateGrid(false);
     });
@@ -1786,7 +1834,7 @@ class ChartingState extends MusicBeatState
         for (i in 0...copiedNotes.length)
         {
           final copiedNote:Array<Dynamic> = [copiedNotes[i][0], copiedNotes[i][1], copiedNotes[i][2], copiedNotes[i][3]];
-          copiedNote[0] += (stepperShiftSteps.value * _i) * (15000 / secBPM(curSec));
+          copiedNote[0] += (stepperShiftSteps.value * _i) * (15000 / Conductor.bpm);
           // yeah.. unfortunately this relies on the value of the Shift Notes stepper.. stupid but it works, so im gonna keep it this way until i find a better solution
           _song.notes[curSec].sectionNotes.push(copiedNote);
         }
@@ -2092,7 +2140,8 @@ class ChartingState extends MusicBeatState
     check_mute_inst = new FlxUICheckBox(10, 280, null, null, "Mute Instrumental (in editor)", 100);
     check_mute_inst.checked = false;
     check_mute_inst.callback = function() {
-      var vol:Float = instVolume.value;
+      var vol:Float = 1;
+
       if (check_mute_inst.checked) vol = 0;
 
       FlxG.sound.music.volume = vol;
@@ -2351,11 +2400,11 @@ class ChartingState extends MusicBeatState
       vocals.time = opponentVocals.time = 0;
       FlxG.sound.music.pause();
       FlxG.sound.music.time = 0;
+      songSlider.maxValue = FlxG.sound.music.length;
       changeSection();
     };
     Conductor.songPosition = sectionStartTime();
     FlxG.sound.music.time = Conductor.songPosition;
-    if (songSlider != null) songSlider.maxValue = FlxG.sound.music.length;
   }
 
   function generateSong(?diff:String = '')
@@ -2420,7 +2469,6 @@ class ChartingState extends MusicBeatState
 
         case 'Change BPM':
           _song.notes[curSec].changeBPM = check.checked;
-          invalidateSectionTimes();
           FlxG.log.add('changed bpm shit');
         case "Alt Animation":
           _song.notes[curSec].altAnim = check.checked;
@@ -2435,7 +2483,6 @@ class ChartingState extends MusicBeatState
       {
         case 'section_beats':
           _song.notes[curSec].sectionBeats = nums.value;
-          invalidateSectionTimes();
           reloadGridLayer();
 
         case 'song_speed':
@@ -2443,7 +2490,6 @@ class ChartingState extends MusicBeatState
 
         case 'song_bpm':
           _song.bpm = nums.value;
-          invalidateSectionTimes();
           Conductor.mapBPMChanges(_song);
           Conductor.changeBPM(nums.value);
 
@@ -2451,12 +2497,11 @@ class ChartingState extends MusicBeatState
           if (curSelectedNote != null && curSelectedNote[2] != null)
           {
             curSelectedNote[2] = nums.value;
-            refreshSelectedSustain();
+            updateGrid();
           }
 
         case 'section_bpm':
           _song.notes[curSec].bpm = nums.value;
-          invalidateSectionTimes();
           updateGrid();
 
         case 'inst_volume':
@@ -2521,94 +2566,25 @@ class ChartingState extends MusicBeatState
     // FlxG.log.add(id + " WEED " + sender + " WEED " + data + " WEED " + params);
   }
 
-  //Helpers for the section time functions.
-  var sectionStarts:Array<Float> = null;
-  var sectionBPMs:Array<Float> = null;
-
-  function invalidateSectionTimes():Void
-  {
-    sectionStarts = null;
-    sectionBPMs = null;
-  }
-
-  function rebuildSectionTimes():Void
-  {
-    sectionStarts = [0.0];
-    sectionBPMs = [];
-    var daBPM:Float = _song.bpm;
-    for (i in 0..._song.notes.length)
-    {
-      var section = _song.notes[i];
-      if (section != null)
-      {
-        if (section.changeBPM) daBPM = section.bpm;
-        sectionStarts.push(sectionStarts[i] + getSectionBeats(i) * (60000 / daBPM));
-      } else
-        sectionStarts.push(sectionStarts[i]);
-      sectionBPMs.push(daBPM);
-    }
-  }
-
-  /**
-    * Converts a time in one section to the same position in another one.
-    * Keeps the same offset from the start of the section, but rescales it to the destination's BPM.
-    * Used for copying notes and events between sections with different BPMs.
-    * Sustain lengths aren't touched, so multiply them by secBPM(srcSec) / secBPM(dstSec) yourself.
-    * @param t The time (in ms) to convert, which should be inside srcSec.
-    * @param srcSec The section the time currently belongs to.
-    * @param dstSec The section to move the time to.
-    */
-  function remapTime(t:Float, srcSec:Int, dstSec:Int):Float
-    return secStartAbs(dstSec) + (t - secStartAbs(srcSec)) * (secBPM(srcSec) / secBPM(dstSec));
-
-  /**
-    * Gets the start time of a certain section.
-    * Works like sectionStartTime, but is absolute and doesn't depend on what section you're in.
-    * @param sec The section to get the start time from.
-    */
-  function secStartAbs(sec:Int):Float
-  {
-    if (sectionStarts == null) rebuildSectionTimes();
-    if (sec <= 0) return 0;
-    return sectionStarts[FlxMath.minInt(sec, sectionStarts.length - 1)];
-  }
-
-  /**
-    * Gets the BPM at a specific section.
-    * A section's own bpm change applies to that section itself
-    * @param sec The section to get the BPM from.
-    */
-  function secBPM(sec:Int):Float
-  {
-    if (sectionBPMs == null) rebuildSectionTimes();
-    if (sec < 0 || sectionBPMs.length == 0) return _song.bpm;
-    return sectionBPMs[FlxMath.minInt(sec, sectionBPMs.length - 1)];
-  }
-
-  /**
-    * Gets the section that a certain song time falls inside of, taking BPM changes and section lengths into account.
-    * If it goes past the end of the last section, the last section is returned.
-    * @param time The song time (in ms) to look up, e.g. FlxG.sound.music.time.
-    */
-  function getSectionAtTime(time:Float):Int
-  {
-    if (sectionStarts == null) rebuildSectionTimes();
-    var low:Int = 0;
-    var high:Int = sectionStarts.length - 2;
-    while (low < high)
-    {
-      var mid:Int = (low + high) >> 1;
-      if (time < sectionStarts[mid + 1]) high = mid;
-      else
-        low = mid + 1;
-    }
-    return high;
-  }
-
   var updatedSection:Bool = false;
 
   function sectionStartTime(add:Int = 0):Float
-    return secStartAbs(curSec + add);
+  {
+    var daBPM:Float = _song.bpm;
+    var daPos:Float = 0;
+    for (i in 0...curSec + add)
+    {
+      if (_song.notes[i] != null)
+      {
+        if (_song.notes[i].changeBPM)
+        {
+          daBPM = _song.notes[i].bpm;
+        }
+        daPos += getSectionBeats(i) * (1000 * 60 / daBPM);
+      }
+    }
+    return daPos;
+  }
 
   var lastConductorPos:Float;
   var colorSine:Float = 0;
@@ -3106,6 +3082,7 @@ class ChartingState extends MusicBeatState
           for (i in 0...controlArray.length)
           {
             if (controlArray[i]) doANoteThing(conductorTime, i, style);
+            updateGrid(false);
           }
         }
 
@@ -3260,7 +3237,7 @@ class ChartingState extends MusicBeatState
       if (_song.notes[curSec] != null) bpmTxt.text += "\n\nSection Notes: " + FlxStringUtil.formatMoney(_song.notes[curSec].sectionNotes.length, false);
     }
 
-    var playedSound:Array<Bool> = [false, false, false, false];
+    var playedSound:Array<Bool> = [false, false, false, false]; // Prevents ouchy GF sex sounds
     curRenderedNotes.forEachAlive(function(note:Note) {
       note.alpha = 1;
       if (curSelectedNote != null)
@@ -3282,37 +3259,52 @@ class ChartingState extends MusicBeatState
       if (note.strumTime <= Conductor.songPosition)
       {
         note.alpha = 0.4;
-        if (note.strumTime >= lastConductorPos && FlxG.sound.music.playing && note.noteData > -1)
+        if (note.strumTime > lastConductorPos && FlxG.sound.music.playing && note.noteData > -1)
         {
           var data:Int = note.noteData % 4;
           var noteDataToCheck:Int = note.noteData;
           if (noteDataToCheck > -1 && note.mustPress != _song.notes[curSec].mustHitSection) noteDataToCheck += 4;
-          if (vortex)
-          {
-            if (ClientPrefs.showNotes && ClientPrefs.enableColorShader)
-              strumLineNotes.members[noteDataToCheck].playAnim('confirm', true, note.rgbShader.r, note.rgbShader.g, note.rgbShader.b);
-            else
-              strumLineNotes.members[noteDataToCheck].playAnim('confirm', true);
-
-            strumLineNotes.members[noteDataToCheck].resetAnim = ((note.sustainLength / 1000) + 0.15) / playbackSpeed;
-          }
-          if (lilBuddiesBox.checked)
-          {
-            var buddy = (note.mustPress ? lilBf : lilOpp);
-            if (ClientPrefs.showNotes && ClientPrefs.enableColorShader)
-              buddy.color = note.rgbShader.r;
-
-            buddy.animation.play("" + note.noteData % 4, true);
-          }
+          if ((ClientPrefs.enableColorShader || ClientPrefs.showNotes && ClientPrefs.enableColorShader)
+            && vortex) strumLineNotes.members[noteDataToCheck].playAnim('confirm', true, note.rgbShader.r, note.rgbShader.g, note.rgbShader.b);
+          else
+            strumLineNotes.members[noteDataToCheck].playAnim('confirm', true);
+          strumLineNotes.members[noteDataToCheck].resetAnim = ((note.sustainLength / 1000) + 0.15) / playbackSpeed;
 
           if (!playedSound[data])
           {
             if ((playSoundBf.checked && note.mustPress) || (playSoundDad.checked && !note.mustPress))
             {
+              if (_song.player1 == 'gf')
+              { // Easter egg
+                hitsound = FlxG.sound.load(Paths.sound("hitsounds/" + 'GF_' + Std.string(data + 1)));
+              }
+
               hitsound.play(true);
               hitsound.volume = hitsoundVolume.value;
               hitsound.pan = note.noteData < 4 ? -0.3 : 0.3; // would be coolio
               playedSound[data] = true;
+            }
+
+            data = note.noteData;
+            if (note.mustPress && lilBuddiesBox.checked)
+            {
+              if (ClientPrefs.enableColorShader || ClientPrefs.showNotes && ClientPrefs.enableColorShader)
+              {
+                lilBf.color = note.rgbShader.r;
+              }
+              lilBf.animation.play("" + (data % 4), true);
+            }
+            if (!note.mustPress && lilBuddiesBox.checked)
+            {
+              if (ClientPrefs.enableColorShader || ClientPrefs.showNotes && ClientPrefs.enableColorShader)
+              {
+                lilOpp.color = note.rgbShader.r;
+              }
+              lilOpp.animation.play("" + (data % 4), true);
+            }
+            if (note.mustPress != _song.notes[curSec].mustHitSection)
+            {
+              data += 4;
             }
           }
         }
@@ -3331,7 +3323,6 @@ class ChartingState extends MusicBeatState
       }
     }
     lastConductorPos = Conductor.songPosition;
-    refreshPresence();
     super.update(elapsed);
     idleMusic.update(elapsed);
   }
@@ -3687,9 +3678,9 @@ class ChartingState extends MusicBeatState
         curSelectedNote[2] = Math.max(curSelectedNote[2], 0);
       }
     }
-    
-    refreshSelectedSustain();
+
     updateNoteUI();
+    updateGrid(false);
   }
 
   function recalculateSteps(add:Float = 0):Int
@@ -3700,23 +3691,12 @@ class ChartingState extends MusicBeatState
         songTime: 0,
         bpm: 0
       }
-
-    var time:Float = FlxG.sound.music.time;
-    var changes:Array<BPMChangeEvent> = Conductor.bpmChangeMap;
-    var low:Int = 0;
-    var high:Int = changes.length - 1;
-    while (low <= high)
+    for (i in 0...Conductor.bpmChangeMap.length)
     {
-      var mid:Int = (low + high) >> 1;
-      if (time > changes[mid].songTime)
-      {
-        lastChange = changes[mid];
-        low = mid + 1;
-      } else
-        high = mid - 1;
+      if (FlxG.sound.music.time > Conductor.bpmChangeMap[i].songTime) lastChange = Conductor.bpmChangeMap[i];
     }
 
-    curStep = lastChange.stepTime + Math.floor((time - lastChange.songTime + add) / Conductor.stepCrochet);
+    curStep = lastChange.stepTime + Math.floor((FlxG.sound.music.time - lastChange.songTime + add) / Conductor.stepCrochet);
     updateBeat();
 
     return curStep;
@@ -3770,6 +3750,9 @@ class ChartingState extends MusicBeatState
       if (blah1 != lastSecBeats || blah2 != lastSecBeatsNext)
       {
         reloadGridLayer();
+      } else
+      {
+        if (updateTheGridBITCH) updateGrid();
       }
       updateSectionUI();
     } else
@@ -3897,106 +3880,115 @@ class ChartingState extends MusicBeatState
     }
   }
 
-  var susMap:Map<Note, FlxSprite> = new Map();
-  var presenceDirty:Bool = false;
-  var lastPresenceUpdate:Float = 0;
-
-  function removeEventNotes(group:FlxTypedGroup<Note>):Void
-  {
-    var kept:Array<Note> = [];
-    for (member in group.members)
-    {
-      if (member == null) continue;
-      if (member.noteData == -1) member.destroy();
-      else
-        kept.push(member);
-    }
-    group.clear();
-    for (member in kept)
-      group.add(member);
-  }
-
-  function refreshPresence():Void
-  {
-    #if DISCORD_ALLOWED
-    if (!presenceDirty || haxe.Timer.stamp() - lastPresenceUpdate < 5) return;
-    presenceDirty = false;
-    lastPresenceUpdate = haxe.Timer.stamp();
-    DiscordClient.changePresence("Chart Editor - Charting " + StringTools.replace(_song.song, '-', ' '),
-      '${FlxStringUtil.formatMoney(CoolUtil.getNoteAmount(_song), false)} Notes');
-    #end
-  }
-
-  function addNoteTypeText(note:Note, noteTypeName:String):Void
-  {
-    var typeInt:Null<Int> = noteTypeMap.get(noteTypeName);
-    var theType:String = '' + typeInt;
-    if (typeInt == null) theType = '?';
-
-    var daText:AttachedFlxText = new AttachedFlxText(0, 0, 100, theType, 24);
-    daText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-    daText.xAdd = -32;
-    daText.yAdd = 6;
-    daText.borderSize = 1;
-    curRenderedNoteType.add(daText);
-    daText.sprTracker = note;
-  }
-
   function updateGrid(?andNext:Bool = true, ?onlyEvents:Bool = false):Void
   {
-    invalidateSectionTimes();
-    presenceDirty = true;
-
+    curRenderedEventText.forEach(txt -> {
+      curRenderedEventText.remove(txt, true);
+      txt.destroy();
+    });
+    curRenderedNotes.forEach(note -> {
+      if (note.noteData == -1)
+      {
+        curRenderedNotes.remove(note, true);
+        note.destroy();
+      }
+    });
     curRenderedEventText.clear();
-    removeEventNotes(curRenderedNotes);
-    if (andNext) removeEventNotes(nextRenderedNotes);
-
-    var sectionStart:Float = sectionStartTime();
-    var nextSectionStart:Float = sectionStartTime(1);
-
+    if (andNext)
+    {
+      nextRenderedNotes.forEach(event -> {
+        if (event.noteData == -1)
+        {
+          nextRenderedNotes.remove(event, true);
+          event.destroy();
+        }
+      });
+    }
+    curRenderedSustains.clear();
     if (!onlyEvents)
     {
+      // classic fnf styled grid updating
+      while (curRenderedNotes.length > 0)
+      {
+        curRenderedNotes.remove(curRenderedNotes.members[0], true);
+      }
+
+      while (curRenderedSustains.length > 0)
+      {
+        curRenderedSustains.remove(curRenderedSustains.members[0], true);
+      }
       curRenderedNotes.clear();
       curRenderedSustains.clear();
-      susMap.clear();
+      curRenderedNoteType.forEach(txt -> {
+        curRenderedNoteType.remove(txt, true);
+        txt.destroy();
+      });
       curRenderedNoteType.clear();
+      // Why did i remove this?
       if (andNext)
       {
+        nextRenderedNotes.forEach(TheNoteThatShouldBeKilledBecauseWeDontNeedIt -> {
+          nextRenderedNotes.remove(TheNoteThatShouldBeKilledBecauseWeDontNeedIt, true);
+          TheNoteThatShouldBeKilledBecauseWeDontNeedIt.destroy();
+        });
         nextRenderedNotes.clear();
         nextRenderedSustains.clear();
       }
 
-      var section = _song.notes[curSec];
-      if (section != null)
+      if (_song.notes[curSec] != null)
       {
-        if (section.changeBPM && section.bpm > 0) Conductor.changeBPM(section.bpm);
-        else
-          Conductor.changeBPM(secBPM(curSec - 1));
-
-        var beats:Float = getSectionBeats();
-        for (i in section.sectionNotes)
+        if (_song.notes[curSec].changeBPM && _song.notes[curSec].bpm > 0)
         {
-          var note:Note = setupNoteData(i, false, sectionStart);
+          Conductor.changeBPM(_song.notes[curSec].bpm);
+          // trace('BPM of this section:');
+        } else
+        {
+          // get last bpm
+          var daBPM:Float = _song.bpm;
+          for (i in 0...curSec)
+            if (_song.notes[i].changeBPM) daBPM = _song.notes[i].bpm;
+          Conductor.changeBPM(daBPM);
+        }
+
+        // CURRENT SECTION
+        var beats:Float = getSectionBeats();
+        for (i in _song.notes[curSec].sectionNotes)
+        {
+          var note:Note = setupNoteData(i, false);
           curRenderedNotes.add(note);
           if (note.sustainLength > 0)
           {
-            var sustain:FlxSprite = setupSusNote(note, beats);
-            curRenderedSustains.add(sustain);
-            susMap.set(note, sustain);
+            curRenderedSustains.add(setupSusNote(note, beats));
           }
 
-          if (i[3] != null && note.noteType != null && note.noteType.length > 0) addNoteTypeText(note, i[3]);
-          note.mustPress = section.mustHitSection;
+          if (i[3] != null && note.noteType != null && note.noteType.length > 0)
+          {
+            var typeInt:Null<Int> = noteTypeMap.get(i[3]);
+            var theType:String = '' + typeInt;
+            if (typeInt == null) theType = '?';
+
+            var daText:AttachedFlxText = new AttachedFlxText(0, 0, 100, theType, 24);
+            daText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+            daText.xAdd = -32;
+            daText.yAdd = 6;
+            daText.borderSize = 1;
+            curRenderedNoteType.add(daText);
+            daText.sprTracker = note;
+          }
+          note.mustPress = _song.notes[curSec].mustHitSection;
           if (i[1] > 3) note.mustPress = !note.mustPress;
         }
       }
     }
 
+    // CURRENT EVENTS
+    var startThing:Float = sectionStartTime();
+    var endThing:Float = sectionStartTime(1);
     for (i in _song.events)
     {
-      if (nextSectionStart > i[0] && i[0] >= sectionStart)
+      if (endThing > i[0] && i[0] >= startThing)
       {
-        var note:Note = setupNoteData(i, false, sectionStart);
+        var note:Note = setupNoteData(i, false);
         curRenderedNotes.add(note);
 
         var text:String = 'Event: ' + note.eventName + ' (' + Math.floor(note.strumTime) + ' ms)' + '\nValue 1: ' + note.eventVal1 + '\nValue 2: '
@@ -4010,42 +4002,52 @@ class ChartingState extends MusicBeatState
         if (note.eventLength > 1) daText.yAdd += 8;
         curRenderedEventText.add(daText);
         daText.sprTracker = note;
+        // trace('test: ' + i[0], 'startThing: ' + startThing, 'endThing: ' + endThing);
       }
     }
 
     if (andNext)
     {
-      if (!onlyEvents && curSec < _song.notes.length - 1)
+      if (!onlyEvents)
       {
+        // NEXT SECTION, which shouldnt even update if you're in the current section
         var beats:Float = getSectionBeats(1);
-        for (i in _song.notes[curSec + 1].sectionNotes)
+        if (curSec < _song.notes.length - 1)
         {
-          var note:Note = setupNoteData(i, true, sectionStart);
-          note.alpha = 0.6;
-          nextRenderedNotes.add(note);
-          if (note.sustainLength > 0)
+          for (i in _song.notes[curSec + 1].sectionNotes)
           {
-            var sustain:FlxSprite = setupSusNote(note, beats);
-            nextRenderedSustains.add(sustain);
-            susMap.set(note, sustain);
+            var note:Note = setupNoteData(i, true);
+            note.alpha = 0.6;
+            nextRenderedNotes.add(note);
+            if (note.sustainLength > 0)
+            {
+              nextRenderedSustains.add(setupSusNote(note, beats));
+            }
           }
         }
       }
 
-      var afterNextSectionStart:Float = sectionStartTime(2);
+      // NEXT EVENTS
+      var startThing:Float = sectionStartTime(1);
+      var endThing:Float = sectionStartTime(2);
       for (i in _song.events)
       {
-        if (afterNextSectionStart > i[0] && i[0] >= nextSectionStart)
+        if (endThing > i[0] && i[0] >= startThing)
         {
-          var note:Note = setupNoteData(i, true, sectionStart);
+          var note:Note = setupNoteData(i, true);
           note.alpha = 0.6;
           nextRenderedNotes.add(note);
         }
       }
     }
+    #if DISCORD_ALLOWED
+    // Updating Discord Rich Presence (for updating Note Count)
+    DiscordClient.changePresence("Chart Editor - Charting " + StringTools.replace(_song.song, '-', ' '),
+      '${FlxStringUtil.formatMoney(CoolUtil.getNoteAmount(_song), false)} Notes');
+    #end
   }
 
-  inline function setupNoteData(i:Array<Dynamic>, isNextSection:Bool, sectionStart:Float):Note
+  inline function setupNoteData(i:Array<Dynamic>, isNextSection:Bool):Note
   {
     var daNoteInfo = i[1];
     var daStrumTime = i[0];
@@ -4067,7 +4069,7 @@ class ChartingState extends MusicBeatState
       note.sustainLength = daSus;
       note.noteType = i[3];
       note.animation.play(Note.colArray[daNoteInfo % 4] + 'Scroll');
-      if (ClientPrefs.enableColorShader && note.noteType == 'Hurt Note') note.updateRGBColors();
+      if (ClientPrefs.enableColorShader) note.updateRGBColors();
     } else
     { // Event note
       note.loadGraphic(Paths.image('eventArrow'));
@@ -4098,10 +4100,9 @@ class ChartingState extends MusicBeatState
     }
 
     var beats:Float = getSectionBeats(isNextSection ? 1 : 0);
-    note.y = getYfromStrumNotes(daStrumTime - sectionStart, beats);
+    note.y = getYfromStrumNotes(daStrumTime - sectionStartTime(), beats);
     // if(isNextSection) note.y += gridBG.height;
     if (note.y < -150) note.y = -150;
-    note.active = false;
     return note;
   }
 
@@ -4136,7 +4137,6 @@ class ChartingState extends MusicBeatState
     {
       spr.color = color;
     }
-    spr.active = false;
     return spr;
   }
 
@@ -4156,7 +4156,6 @@ class ChartingState extends MusicBeatState
       };
 
     _song.notes.push(sec);
-    invalidateSectionTimes();
   }
 
   function selectNote(note:Note, ?updateTheGrid:Bool = true):Void
@@ -4243,11 +4242,10 @@ class ChartingState extends MusicBeatState
         txt.destroy();
       }
     });
-    var sustain:FlxSprite = susMap.get(note);
-    if (sustain != null)
+    if (note.sustainLength > 0)
     {
-      curRenderedSustains.remove(sustain, true);
-      susMap.remove(note);
+      curRenderedSustains.remove(note, true);
+      updateGrid(false);
     }
     curRenderedNotes.remove(note, true);
     note.destroy();
@@ -4329,7 +4327,7 @@ class ChartingState extends MusicBeatState
       switch (noteData)
       {
         case -1:
-          var note:Note = setupNoteData(curSelectedNote, false, sectionStartTime());
+          var note:Note = setupNoteData(curSelectedNote, false);
           curRenderedNotes.add(note);
 
           var text:String = 'Event: ' + note.eventName + ' (' + Math.floor(note.strumTime) + ' ms)' + '\nValue 1: ' + note.eventVal1 + '\nValue 2: '
@@ -4341,18 +4339,16 @@ class ChartingState extends MusicBeatState
           daText.xAdd = -410;
           daText.borderSize = 1;
           if (note.eventLength > 1) daText.yAdd += 8;
-          curRenderedEventText.add(daText);
+          curRenderedNoteType.add(daText);
           daText.sprTracker = note;
         // trace('test: ' + i[0], 'startThing: ' + startThing, 'endThing: ' + endThing);
         default:
           var beats:Float = getSectionBeats();
-          var note:Note = setupNoteData(curSelectedNote, false, sectionStartTime());
+          var note:Note = setupNoteData(curSelectedNote, false);
           curRenderedNotes.add(note);
           if (note.sustainLength > 0)
           {
-            var sustain:FlxSprite = setupSusNote(note, getSectionBeats());
-            curRenderedSustains.add(sustain);
-            susMap.set(note, sustain);
+            curRenderedSustains.add(setupSusNote(note, beats));
           }
 
           if (curSelectedNote[3] != null && note.noteType != null && note.noteType.length > 0)
@@ -4375,6 +4371,12 @@ class ChartingState extends MusicBeatState
       updateNoteUI();
     }
     unsavedChanges = true;
+  }
+
+  // will figure this out l8r
+  function redo()
+  {
+    // _song = redos[curRedoIndex];
   }
 
   function getStrumTime(yPos:Float, doZoomCalc:Bool = true):Float
@@ -4421,13 +4423,12 @@ class ChartingState extends MusicBeatState
     if (undos.length > 0 && saveUndoCheck.checked)
     {
       _song.notes = undos[0];
-      invalidateSectionTimes();
       redos.unshift(undos[0]);
       undos.splice(0, 1);
       lastUndoShit = null;
       trace("Performed an Undo! Undos remaining: " + undos.length);
       unsavedChanges = true;
-      if (curSec > _song.notes.length) changeSection(_song.notes.length - 1);
+      if (curSection > _song.notes.length) changeSection(_song.notes.length - 1);
       updateGrid();
     }
   }
@@ -4435,48 +4436,6 @@ class ChartingState extends MusicBeatState
   function getNotes():Array<Dynamic>
   {
     return [for (i in _song.notes) i.sectionNotes];
-  }
-
-  function getSelectedNote():Note
-  {
-    var section = _song.notes[curSec];
-    if (curSelectedNote == null || section == null) return null;
-
-    var isNote:Bool = curSelectedNote[2] != null;
-    var selectedTime:Float = curSelectedNote[0];
-    var selectedData:Float = isNote ? curSelectedNote[1] : -1;
-
-    for (note in curRenderedNotes.members)
-    {
-      if (note == null || !note.exists || note.strumTime != selectedTime) continue;
-
-      var noteData:Int = note.noteData;
-      if (noteData > -1 && note.mustPress != section.mustHitSection) noteData += 4;
-
-      if (isNote ? noteData == selectedData : noteData < 0) return note;
-    }
-    return null;
-  }
-
-  function refreshSelectedSustain():Void
-  {
-    var note:Note = getSelectedNote();
-    if (note == null || curSelectedNote[2] == null) return;
-
-    var oldSustain:FlxSprite = susMap.get(note);
-    if (oldSustain != null)
-    {
-      curRenderedSustains.remove(oldSustain, true);
-      susMap.remove(note);
-    }
-
-    note.sustainLength = curSelectedNote[2];
-    if (note.sustainLength > 0)
-    {
-      var sustain:FlxSprite = setupSusNote(note, getSectionBeats());
-      curRenderedSustains.add(sustain);
-      susMap.set(note, sustain);
-    }
   }
 
   function loadJson(song:String, ?diff:String = ''):Void

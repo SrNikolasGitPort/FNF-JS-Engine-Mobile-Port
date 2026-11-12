@@ -205,8 +205,8 @@ class VisualsUISubState extends BaseOptionsMenu
       "If checked, the rating popup will be a much simpler popup.\nEasy on the eyes, and less clutter for the HUD!", 'simplePopups', 'bool', false);
     addOption(option);
 
-    final option:Option = new Option('Icon Bounce:', "Which icon bounce would you like?", 'iconBounceType', 'string', 'New Psych', [
-      'Swing',
+    final option:Option = new Option('Icon Bounce:', "Which icon bounce would you like?", 'iconBounceType', 'string', 'Golden Apple', [
+      'Golden Apple',
       'Dave and Bambi',
       'Old Psych',
       'New Psych',
@@ -251,13 +251,6 @@ class VisualsUISubState extends BaseOptionsMenu
     final option:Option = new Option('FPS Counter', 'If unchecked, hides FPS Counter.', 'showFPS', 'bool', true);
     addOption(option);
     option.onChange = onChangeFPSCounter;
-
-    final option:Option = new Option('FPS Update Frequency: ', "How often should the FPS Counter update?\nTurn on the previous option to see this in effect!",
-      'fpsRate', 'int', 1);
-
-    option.minValue = 1;
-    option.maxValue = 1000;
-    addOption(option);
     #end
 
     final option:Option = new Option('Show RAM Usage', "If checked, the game will show your RAM usage.", 'showRamUsage', 'bool', true);

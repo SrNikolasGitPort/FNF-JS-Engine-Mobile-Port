@@ -16,10 +16,12 @@ class TypedAlphabet extends Alphabet
 		this.delay = delay;
 	}
 
-	public function setText(newText:String)
+	override private function set_text(newText:String)
 	{
 		super.set_text(newText);
+
 		resetDialogue();
+		return newText;
 	}
 
 	private var _curLetter:Int = -1;

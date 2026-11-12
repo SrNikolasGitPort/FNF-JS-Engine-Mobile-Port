@@ -1,12 +1,12 @@
 package;
 
+import flixel.FlxState;
 import backend.SSPlugin as ScreenShotPlugin;
 import debug.FPSCounter;
 import backend.FunkinGame;
 import lime.app.Application;
 import openfl.Lib;
 import openfl.display.Sprite;
-import flixel.util.typeLimit.NextState;
 #if (linux && !debug)
 import hxgamemode.GamemodeClient;
 #end
@@ -17,16 +17,6 @@ import lime.graphics.Image;
 import mobile.MobileControls;
 import mobile.backend.StorageUtil;
 #end
-
-typedef GameStruct =
-{
-  width:Int,
-  height:Int,
-  initialState:Class<FlxState>,
-  framerate:Int,
-  skipSplash:Bool,
-  startFullscreen:Bool
-}
 
 #if windows
 @:buildXml('
@@ -42,15 +32,16 @@ typedef GameStruct =
 #end
 class Main extends Sprite
 {
-  public static final game:GameStruct =
-  {
-    width: 1280,
-    height: 720,
-    initialState: TitleState,
-    framerate: 60,
-    skipSplash: true,
-    startFullscreen: false
-  };
+  final game =
+    {
+      width: 1280,
+      height: 720,
+      initialState: InitState,
+      zoom: -1.0,
+      framerate: 60,
+      skipSplash: true,
+      startFullscreen: false
+    };
 
   public static var fpsVar:FPSCounter;
   public static var instance:Main;
@@ -105,11 +96,20 @@ class Main extends Sprite
   public static function isPlayState():Bool
     return Type.getClassName(Type.getClass(FlxG.state)) == 'PlayState';
 
-  public static function getFirstState():NextState
-    return (!ClientPrefs.disableSplash) ? () -> new StartupState() : () -> Type.createInstance(Main.game.initialState, []);
-
   private function setupGame():Void
   {
+    var stageWidth:Int = Lib.current.stage.stageWidth;
+    var stageHeight:Int = Lib.current.stage.stageHeight;
+    #if (openfl <= "9.2.0")
+    if (game.zoom == -1.0)
+    {
+      var ratioX:Float = stageWidth / game.width;
+      var ratioY:Float = stageHeight / game.height;
+      game.zoom = Math.min(ratioX, ratioY);
+      game.width = Math.ceil(stageWidth / game.zoom);
+      game.height = Math.ceil(stageHeight / game.zoom);
+    };
+    #end
     ClientPrefs.loadDefaultStuff();
     #if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 
@@ -198,4 +198,4 @@ class Main extends Sprite
   {
     fpsVar.textColor = color;
   }
-}
+}

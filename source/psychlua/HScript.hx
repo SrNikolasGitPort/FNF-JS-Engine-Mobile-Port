@@ -196,6 +196,7 @@ class HScript
 	{
 		#if LUA_ALLOWED
 		funk.addLocalCallback("runHaxeCode", function(codeToRun:String, ?varsToBring:Any = null, ?funcToRun:String = null, ?funcArgs:Array<Dynamic> = null) {
+			trace('runHaxeCode added');
 			var retVal:Dynamic = null;
 			final types:Array<Dynamic> = [Bool, Int, Float, String, Array];
 			#if HSCRIPT_ALLOWED

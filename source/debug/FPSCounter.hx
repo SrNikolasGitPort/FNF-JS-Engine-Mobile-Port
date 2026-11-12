@@ -10,7 +10,11 @@ import openfl.text.TextFormatAlign;
 class FPSCounter extends TextField
 {
   public var currentFPS(default, null):Float;
-  
+
+  var lastText:String = "";
+  var outlineDirty:Bool = true;
+  var _outlineTimer:Float = 0;
+
   /*
    * The current memory usage (WARNING: This might NOT your total memory usage, rather it might show the garbage collector memory if you aren't running on a C++ platform.)
    */
@@ -24,8 +28,8 @@ class FPSCounter extends TextField
   inline function get_mempeak():Float
     return GetTotalMemory.getPeakRSS();
 
-  @:noCompletion private var times:Array<Float>;
-  private var deltaTimeout:Float = 0;
+  private var _framesPassed:Int = 0;
+  private var _updateClock:Float = 0;
   private var _previousTime:Float = 0;
 
   public var align(default, set):TextFormatAlign;
@@ -40,13 +44,12 @@ class FPSCounter extends TextField
     currentFPS = 0;
     selectable = false;
     mouseEnabled = false;
-    defaultTextFormat = new TextFormat(OpenFlAssets.getFont("assets/fonts/vcr.ttf").fontName, 14, color);
+    defaultTextFormat = new TextFormat("VCR OSD Mono", 14, color);
     autoSize = LEFT;
     multiline = true;
-    text = "FPS: 0";
+    text = "FPS: ";
 
     _previousTime = Main.getTime();
-    times = [];
 
     FlxG.signals.gameResized.add(function(w, h) {
       align = align;
@@ -63,6 +66,9 @@ class FPSCounter extends TextField
   var _lastRainbowPhase:Float = -1.0;
 
   var fpsMultiplier:Float = 1.0;
+  var deltaTimeout:Float = 0.0;
+
+  public var timeoutDelay:Float = 50;
 
   var now:Float = 0;
 
@@ -74,11 +80,11 @@ class FPSCounter extends TextField
     final now = Main.getTime();
     final deltaTime = Math.max(now - _previousTime, 0);
     _previousTime = now;
-    times.push(now);
-		while (times[0] < now - 1000)
-			times.shift();
 
-    if (deltaTimeout >= 1000 / ClientPrefs.fpsRate)
+    _framesPassed++;
+    _updateClock += deltaTime;
+
+    if (_updateClock >= 1000)
     {
       var multiplier:Float = 1.0;
 
@@ -92,12 +98,14 @@ class FPSCounter extends TextField
           multiplier = 1.0;
       }
 
-      currentFPS = times.length;
+      currentFPS = (_framesPassed / multiplier);
       currentFPS = Math.min(currentFPS, FlxG.drawFramerate);
 
       updateText();
-      deltaTimeout = 0;
-    } else deltaTimeout += deltaTime;
+
+      _framesPassed = 0;
+      _updateClock = 0;
+    }
 
     updateColors();
   }
