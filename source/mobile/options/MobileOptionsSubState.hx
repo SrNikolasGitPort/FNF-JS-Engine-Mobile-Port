@@ -70,6 +70,10 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		option.onChange = refresh;
 		addOption(option);
 
+		option = new Option('Allow Phone Screensaver', 'If checked, the phone may go to sleep while the game is idle\n(the time depends on your phone settings).', 'screensaver', 'bool', false);
+		option.onChange = () -> lime.system.System.allowScreenTimeout = ClientPrefs.screensaver;
+		addOption(option);
+
 		super();
 		rebuildPreview();
 	}

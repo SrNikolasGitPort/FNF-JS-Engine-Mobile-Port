@@ -11,6 +11,7 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var hitboxPosition:String = 'Full'; // Full / Bottom
 	public static var hideHitboxHints:Bool = false; // true = the lanes are never drawn (they still work)
 	public static var mobileVibration:Bool = false; // short vibration on every button press
+	public static var screensaver:Bool = false; // let the phone sleep while idle
 	public static var mobileExtraButtons:Bool = false; // shows the Bot Energy button in songs
 	public static var mobileScaleMode:String = 'Ratio'; // Ratio (16:9 with black bars) / Full Screen (normal picture, no bars, no zoom) / Stretched (distorted to the whole screen)
 
@@ -345,6 +346,8 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 			FlxG.save.flush();
 		}
 		// 32-bit phones run out of memory easily (crash when a song loads): lighter defaults, applied once
+		#if mobile lime.system.System.allowScreenTimeout = screensaver; #end
+
 		if (FlxG.save.data.lowMemoryApplied != true)
 		{
 			if (mobile.backend.DeviceInfo.is32Bit)
