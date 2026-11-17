@@ -1,0 +1,85 @@
+[
+  {
+    "profile": "default",
+    "pkgs": [
+      {
+        "name": "lime",
+        "link": "https://github.com/JS-Engine-things/lime-8.1.2"
+      },
+      {
+        "name": "openfl",
+        "link": "https://github.com/JS-Engine-things/openfl"
+      },
+      {
+        "name": "flixel",
+        "link": "https://github.com/JS-Engine-things/flixel-JS-Engine"
+      },
+      {
+        "name": "flixel-addons",
+        "link": "https://github.com/JS-Engine-things/flixel-addons"
+      },
+      {
+        "name": "flixel-ui",
+        "version": "2.6.0"
+      },
+      {
+        "name": "hxp"
+      },
+      {
+        "name": "hxcpp",
+        "link": "https://github.com/JS-Engine-things/libhxcpp",
+        "branch": "main"
+      },
+      {
+        "name": "hxvlc",
+        "link": "https://github.com/JS-Engine-things/hxvlc"
+      },
+      {
+        "name": "hscript",
+        "link": "https://github.com/JS-Engine-things/hscript-improved",
+        "branch": "master"
+      },
+      {
+        "name": "hxcpp-debug-server"
+      },
+      {
+        "name": "flixel-animate",
+        "link": "https://github.com/MaybeMaru/flixel-animate",
+        "branch": "main"
+      },
+      {
+        "name": "hxdiscord_rpc",
+        "link": "https://github.com/MAJigsaw77/hxdiscord_rpc",
+        "branch": "main"
+      },
+      {
+        "name": "hxluajit",
+        "link": "https://github.com/ShadowEngineTeam/hxluajit",
+        "branch": "main"
+      },
+      {
+        "name": "funkin.vis",
+        "link": "https://github.com/JS-Engine-things/funkVis-FrequencyFixed",
+        "branch": "main"
+      },
+      {
+        "name": "grig.audio",
+        "link": "https://github.com/JS-Engine-things/grig.audio",
+        "branch": "master"
+      },
+      {
+        "name": "tjson",
+        "link": "https://github.com/moxie-coder/tjson",
+        "branch": "master"
+      },
+      {
+        "name": "hxnativefiledialog",
+        "link": "https://github.com/MAJigsaw77/hxnativefiledialog",
+        "branch": "main"
+      },
+      {
+        "name": "hxgamemode"
+      }
+    ]
+  }
+]

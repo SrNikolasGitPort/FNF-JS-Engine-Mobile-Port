@@ -1,0 +1,71 @@
+#if !macro
+import Paths;
+
+#if sys
+import sys.*;
+import sys.io.*;
+#end
+
+#if LUA_ALLOWED
+import hxluajit.*;
+import hxluajit.Types;
+import psychlua.*;
+#else
+import psychlua.FunkinLua; // TODO: test and seperate this into LuaUtils
+// import psychlua.LuaUtils;
+import psychlua.HScript;
+// import psychlua.ScriptHandler;
+#end
+
+#if flixel_animate
+import animate.FlxAnimate;
+import animate.FlxAnimateFrames;
+import backend.PsychFlxAnimate;
+#end
+
+#if MODS_ALLOWED
+import backend.Mods;
+#end
+
+//so that it doesn't bring up a "Type not found: Countdown"
+import BaseStage.Countdown;
+
+//Flixel
+import flixel.sound.FlxSound;
+import flixel.FlxG;
+import flixel.FlxSprite;
+import flixel.FlxCamera;
+import flixel.FlxState;
+import flixel.math.FlxMath;
+import flixel.math.FlxPoint;
+import flixel.math.FlxRect;
+import flixel.util.FlxColor;
+import flixel.util.FlxTimer;
+import flixel.text.FlxText;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.group.FlxSpriteGroup;
+import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.util.FlxDestroyUtil;
+import flixel.addons.transition.FlxTransitionableState;
+import flixel.FlxSubState;
+import flixel.addons.display.FlxGridOverlay; //still used for the note color substate
+import flixel.addons.display.FlxTiledSprite;
+import flixel.graphics.frames.FlxAtlasFrames;
+import flixel.FlxObject;
+import flixel.util.FlxSave;
+import flixel.util.FlxStringUtil;
+
+//others
+import openfl.display.BitmapData;
+import openfl.net.FileFilter;
+import openfl.geom.Rectangle;
+import openfl.utils.Assets as OpenFlAssets;
+import lime.utils.Assets;
+import haxe.Json;
+
+// utils
+import utils.*;
+
+using StringTools;
+#end
