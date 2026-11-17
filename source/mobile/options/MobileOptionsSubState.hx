@@ -1,18 +1,14 @@
 package mobile.options;
 
 import mobile.MobileControls;
-import mobile.objects.HitboxPreview;
 import options.BaseOptionsMenu;
 import options.Option;
 
 /**
  * "Mobile Options": everything about the touch controls.
- * The hitbox preview at the back redraws live while you change the options.
  */
 class MobileOptionsSubState extends BaseOptionsMenu
 {
-	var preview:HitboxPreview;
-
 	public function new()
 	{
 		title = 'Mobile Options';
@@ -75,42 +71,16 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		super();
-		rebuildPreview();
 	}
 
 	function refresh():Void
 	{
 		if (MobileControls.instance != null)
 			MobileControls.instance.refresh();
-		rebuildPreview();
-	}
-
-	function rebuildPreview():Void
-	{
-		final controls = MobileControls.instance;
-		if (controls == null)
-			return;
-
-		if (preview != null)
-		{
-			remove(preview, true);
-			preview.destroy();
-		}
-
-		// a small framed picture in the top-right corner (the old full-screen preview made the menu hard to read)
-		preview = new HitboxPreview(1280 - 16 - 240, 24, 240, 135, ClientPrefs.hitboxAlpha, switch (ClientPrefs.hitboxStyle)
-		{
-			case 'Flat': 1;
-			case 'Outline': 2;
-			default: 0;
-		}, ClientPrefs.hitboxPosition == 'Bottom', ClientPrefs.hideHitboxHints, ClientPrefs.mobileExtraButtons);
-		preview.assignCamera(controls.camera);
-		add(preview);
 	}
 
 	override function destroy():Void
 	{
-		preview = null;
 		super.destroy();
 	}
 }
