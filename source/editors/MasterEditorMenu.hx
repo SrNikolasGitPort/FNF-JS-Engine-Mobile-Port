@@ -1,20 +1,5 @@
 package editors;
 
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.addons.display.FlxGridOverlay;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
-import flixel.sound.FlxSound;
-#if MODS_ALLOWED
-import sys.FileSystem;
-#end
-
-using StringTools;
-
 class MasterEditorMenu extends MusicBeatState
 {
 	var options:Array<String> = [
@@ -24,8 +9,7 @@ class MasterEditorMenu extends MusicBeatState
 		'Dialogue Portrait Editor',
 		'Character Editor',
 		'Chart Editor',
-		'Note Splash Debug',
-		'3D Benchmark'
+		'Note Splash Debug'
 	];
 	private var grpTexts:FlxTypedGroup<Alphabet>;
 	private var directories:Array<String> = [null];
@@ -37,7 +21,7 @@ class MasterEditorMenu extends MusicBeatState
 	override function create()
 	{
 		FlxG.camera.bgColor = FlxColor.BLACK;
-		#if desktop
+		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("Editors Main Menu", null);
 		#end
@@ -69,12 +53,12 @@ class MasterEditorMenu extends MusicBeatState
 		directoryTxt.scrollFactor.set();
 		add(directoryTxt);
 
-		for (folder in Paths.getModDirectories())
+		for (folder in Mods.getModDirectories())
 		{
 			directories.push(folder);
 		}
 
-		var found:Int = directories.indexOf(Paths.currentModDirectory);
+		var found:Int = directories.indexOf(Mods.currentModDirectory);
 		if (found > -1)
 			curDirectory = found;
 		changeDirectory();
@@ -82,8 +66,6 @@ class MasterEditorMenu extends MusicBeatState
 		changeSelection();
 
 		FlxG.mouse.visible = false;
-
-		addVirtualPad(#if MODS_ALLOWED LEFT_FULL #else UP_DOWN #end, A_B);
 
 		super.create();
 	}
@@ -130,8 +112,6 @@ class MasterEditorMenu extends MusicBeatState
 					LoadingState.loadAndSwitchState(ChartingState.new, false);
 				case 'Note Splash Debug':
 					LoadingState.loadAndSwitchState(NoteSplashDebugState.new, false);
-				case '3D Benchmark':
-					LoadingState.loadAndSwitchState(BenchmarkState.new, false);
 			}
 			FlxG.sound.music.volume = 0;
 			#if PRELOAD_ALL
@@ -182,12 +162,10 @@ class MasterEditorMenu extends MusicBeatState
 			bullShit++;
 
 			item.alpha = 0.6;
-			// item.setGraphicSize(Std.int(item.width * 0.8));
 
 			if (item.targetY == 0)
 			{
 				item.alpha = 1;
-				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
 		super.update(elapsed);
@@ -222,8 +200,8 @@ class MasterEditorMenu extends MusicBeatState
 			directoryTxt.text = '< No Mod Directory Loaded >';
 		else
 		{
-			Paths.currentModDirectory = directories[curDirectory];
-			directoryTxt.text = '< Loaded Mod Directory: ' + Paths.currentModDirectory + ' >';
+			Mods.currentModDirectory = directories[curDirectory];
+			directoryTxt.text = '< Loaded Mod Directory: ' + Mods.currentModDirectory + ' >';
 		}
 		directoryTxt.text = directoryTxt.text.toUpperCase();
 	}

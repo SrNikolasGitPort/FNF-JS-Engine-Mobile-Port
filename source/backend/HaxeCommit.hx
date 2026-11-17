@@ -27,6 +27,7 @@ class HaxeCommit
 {
 	public static macro function getGitCommitHash():haxe.macro.Expr.ExprOf<String>
 	{
+		#if !commit return macro $v{null}; #end 
 		#if !display
 		// Get the current line number.
 		var pos = haxe.macro.Context.currentPos();
@@ -39,7 +40,7 @@ class HaxeCommit
 		}
 
 		// read the output of the process
-		var commitHash:String = process.stdout.readLine();
+		var commitHash = process.stdout.readLine();
 		var commitHashSplice:String = commitHash.substr(0, 7);
 
 		// haxe.macro.Context.info('[INFO] We are building in git commit ${commitHashSplice}', pos);

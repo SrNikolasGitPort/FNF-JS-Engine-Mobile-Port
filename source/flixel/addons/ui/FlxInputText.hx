@@ -1,12 +1,13 @@
 package flixel.addons.ui;
 
-import lime.system.Clipboard;
-import flash.errors.Error;
-import flash.events.KeyboardEvent;
-import flash.geom.Rectangle;
 import flixel.addons.ui.FlxUI.NamedString;
-import flixel.math.FlxRect;
-import flixel.util.FlxDestroyUtil;
+import lime.system.Clipboard;
+import openfl.errors.Error;
+import openfl.events.KeyboardEvent;
+#if mobile
+import openfl.events.TextEvent;
+#end
+import openfl.geom.Rectangle;
 
 /**
  * FlxInputText v1.11, ported to Haxe
@@ -20,7 +21,7 @@ import flixel.util.FlxDestroyUtil;
  * Copyright (c) 2009 Martín Sebastián Wain
  * License: Creative Commons Attribution 3.0 United States
  * @link http://creativecommons.org/licenses/by/3.0/us/
- * 
+ *
  */
 class FlxInputText extends FlxText
 {
@@ -223,6 +224,10 @@ class FlxInputText extends FlxText
 
 		lines = 1;
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+		#if mobile
+		// soft keyboards do not send key codes for letters, they send text input events
+		FlxG.stage.addEventListener(TextEvent.TEXT_INPUT, onTextInput);
+		#end
 
 		if (Text == null)
 		{
@@ -240,6 +245,11 @@ class FlxInputText extends FlxText
 	override public function destroy():Void
 	{
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+		#if mobile
+		FlxG.stage.removeEventListener(TextEvent.TEXT_INPUT, onTextInput);
+		if (hasFocus)
+			FlxG.stage.window.textInputEnabled = false;
+		#end
 
 		backgroundSprite = FlxDestroyUtil.destroy(backgroundSprite);
 		fieldBorderSprite = FlxDestroyUtil.destroy(fieldBorderSprite);
@@ -307,7 +317,7 @@ class FlxInputText extends FlxText
 			if (FlxG.mouse.overlaps(this,camera))
 			{
 				caretIndex = getCaretIndex();
-				hasFocus = FlxG.stage.window.textInputEnabled = true;
+				hasFocus = true;
 				if (!hadFocus && focusGained != null)
 					focusGained();
 			}
@@ -320,7 +330,7 @@ class FlxInputText extends FlxText
 		}
 		#end
 	}
-	
+
 
 	/**
 	 * Handles keypresses generated on the stage.
@@ -442,12 +452,14 @@ class FlxInputText extends FlxText
 			// Enter
 			else if (key == 13)
 			{
-				FlxG.stage.window.textInputEnabled = false;
 				onChange(ENTER_ACTION);
 			}
 			// Actually add some text
 			else
 			{
+				#if mobile
+				return; // printable characters arrive through onTextInput on phones (avoids typing twice with a hardware keyboard)
+				#end
 				if (e.charCode == 0) // non-printable characters crash String.fromCharCode
 				{
 					return;
@@ -463,6 +475,21 @@ class FlxInputText extends FlxText
 			}
 		}
 	}
+
+	#if mobile
+	private function onTextInput(e:TextEvent):Void
+	{
+		if (!hasFocus)
+			return;
+		var newText:String = filter(e.text);
+		if (newText.length > 0 && (maxLength == 0 || (text.length + newText.length) < maxLength))
+		{
+			text = insertSubstring(text, newText, caretIndex);
+			caretIndex += newText.length;
+			onChange(INPUT_ACTION);
+		}
+	}
+	#end
 
 	private function onChange(action:String):Void
 	{
@@ -769,8 +796,6 @@ class FlxInputText extends FlxText
 					caret.pixels.fillRect(r, caretC); // draw caret
 					// we need to offset caret's drawing position since the caret is now larger than normal
 					caret.offset.x = caret.offset.y = borderSize;
-
-				case _:
 			}
 			// Update width/height so caret's dimensions match its pixels
 			caret.width = cw;
@@ -885,6 +910,9 @@ class FlxInputText extends FlxText
 
 		if (newFocus != hasFocus)
 		{
+			#if mobile
+			FlxG.stage.window.textInputEnabled = newFocus; // shows/hides the on-screen keyboard
+			#end
 			calcFrame();
 		}
 		return hasFocus = newFocus;

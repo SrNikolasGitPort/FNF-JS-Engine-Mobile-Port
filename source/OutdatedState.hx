@@ -1,18 +1,10 @@
 package;
 
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.FlxSubState;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
-import flixel.effects.FlxFlicker;
-import lime.app.Application;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.tweens.FlxTween;
-import flixel.util.FlxTimer;
 import flixel.addons.display.FlxBackdrop;
-import openfl.display.BlendMode;
+import flixel.effects.FlxFlicker;
 import flixel.util.FlxAxes;
+import lime.app.Application;
+import openfl.display.BlendMode;
 
 class OutdatedState extends MusicBeatState
 {
@@ -27,6 +19,9 @@ class OutdatedState extends MusicBeatState
 	var bg:FlxSprite;
 	override function create()
 	{
+#if mobile
+mobilePadMode = AB;
+#end
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
@@ -62,14 +57,12 @@ class OutdatedState extends MusicBeatState
 		add(changelog);
 
 		updateText = new FlxText(0, 10, FlxG.width,
-			mobile.MobileControls.enabled ? "Press A to view the full changelog and update or B to ignore this!" : "Press SPACE to view the full changelog, ENTER to update or ESCAPE to ignore this!"
+			"Press SPACE/ENTER to go to GitHub to update, or ESCAPE to ignore this!"
 			,24);
 		updateText.setFormat("VCR OSD Mono", 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			updateText.y = 710 - updateText.height;
 			updateText.x = 10;
 		add(updateText);
-
-		addVirtualPad(NONE, A_B);
 	}
 
 	override function update(elapsed:Float)
@@ -77,14 +70,7 @@ class OutdatedState extends MusicBeatState
 		checker.x += 0.45 / (ClientPrefs.framerate / 60);
 		checker.y += (0.16 / (ClientPrefs.framerate / 60));
 		if(!leftState) {
-			if (virtualPad.buttonA.justPressed || FlxG.keys.justPressed.ENTER) {
-				leftState = true;
-				#if (windows || android) FlxG.switchState(UpdateState.new);
-				#else
-				CoolUtil.browserLoad("https://github.com/JordanSantiagoYT/FNF-JS-Engine/releases/latest");
-				#end
-			}
-			if (FlxG.keys.justPressed.SPACE) {
+			if (FlxG.keys.justPressed.ENTER || FlxG.keys.justPressed.SPACE) {
 				CoolUtil.browserLoad("https://github.com/JordanSantiagoYT/FNF-JS-Engine/releases/latest");
 			}
 			else if(controls.BACK) {

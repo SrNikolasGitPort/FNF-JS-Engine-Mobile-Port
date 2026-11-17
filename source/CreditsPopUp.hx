@@ -1,15 +1,6 @@
 package;
 
-import sys.FileSystem;
-import flixel.group.FlxSpriteGroup;
 import flixel.group.FlxSpriteGroup.FlxTypedSpriteGroup;
-import flixel.FlxObject;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
-import flixel.FlxSprite;
-import flixel.math.FlxMath;
-import flixel.util.FlxColor;
-import flixel.util.FlxStringUtil;
 
 typedef SongHeading = {
 	var path:String;
@@ -35,7 +26,6 @@ class CreditsPopUp extends FlxSpriteGroup
 
 		headingPath = {path: PlayState.SONG.songCreditBarPath.length <= 0 ? 'JSEHeading' : 'songHeadings/' + PlayState.SONG.songCreditBarPath, antiAliasing: ClientPrefs.globalAntialiasing, iconOffset: 0};
 
-
 		if (PlayState.SONG.songCreditIcon.length >= 1) songCreatorIcon = PlayState.SONG.songCreditIcon;
 			else songCreatorIcon = 'ExampleIcon';
 
@@ -52,7 +42,7 @@ class CreditsPopUp extends FlxSpriteGroup
 			bg.antialiasing = headingPath.antiAliasing;
 			curHeading = headingPath;
 		}
-		createHeadingText(title + "\nComposed by" + ' ' + songCreator + (!ClientPrefs.ratingCounter ? '\nNote Count: ${FlxStringUtil.formatMoney(PlayState.instance.totalNotes, false)} / ${FlxStringUtil.formatMoney(PlayState.instance.opponentNoteTotal, false)}' : ''));
+		createHeadingText(title + "\nComposed by" + ' ' + songCreator);
 		funnyIcon = new FlxSprite(0, 0).loadGraphic(Paths.image('songCreators/$songCreatorIcon'));
 		funnyIcon.visible = PlayState.SONG.songCreditIcon.length > 0;
 		rescaleIcon();
@@ -74,12 +64,12 @@ class CreditsPopUp extends FlxSpriteGroup
 		bg = new FlxSprite().makeGraphic(400, 50, FlxColor.WHITE);
 		if (newHeading != null)
 		{
-				bg.loadGraphic(Paths.image(newHeading.path));
+			bg.loadGraphic(Paths.image(newHeading.path));
 		}
 		bg.antialiasing = newHeading.antiAliasing;
 		curHeading = newHeading;
 		add(bg);
-		
+
 		rescaleBG();
 	}
 	public function changeText(newText:String, newIcon:String, rescaleHeading:Bool = true)
@@ -116,7 +106,7 @@ class CreditsPopUp extends FlxSpriteGroup
 			remove(funnyText);
 		}
 		funnyText = new FlxText(1, 0, 650, text, 16);
-		funnyText.setFormat('vcr.ttf', 30, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		funnyText.setFormat(Paths.font('vcr.ttf'), 30, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		funnyText.borderSize = 2;
 		funnyText.antialiasing = true;
 		add(funnyText);

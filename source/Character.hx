@@ -1,25 +1,10 @@
 package;
 
-import flixel.tweens.FlxEase;
-import flixel.FlxG;
-import flixel.FlxSprite;
+import Section.SwagSection;
 import flixel.addons.effects.FlxTrail;
 import flixel.animation.FlxBaseAnimation;
-import flixel.graphics.frames.FlxAtlasFrames;
-import flixel.tweens.FlxTween;
 import flixel.util.FlxSort;
-import flixel.util.FlxDestroyUtil;
-import flixel.math.FlxRect;
-import Section.SwagSection;
-#if MODS_ALLOWED
-import sys.io.File;
-import sys.FileSystem;
-#end
 import openfl.utils.AssetType;
-import openfl.utils.Assets;
-import haxe.Json;
-
-using StringTools;
 
 typedef CharacterFile = {
 	var animations:Array<AnimArray>;
@@ -34,18 +19,24 @@ typedef CharacterFile = {
 	var flip_x:Bool;
 	var no_antialiasing:Bool;
 	var healthbar_colors:Array<Int>;
-	var winning_colors:Array<Int>;
-	var losing_colors:Array<Int>;
-	var noteskin:String;
-	var vocals_file:String;
 
-	var health_drain:Bool;
-	var drain_amount:Float;
-	var drain_floor:Float;
+	@:optional var trail_length:Null<Int>;
+	@:optional var trail_delay:Null<Int>;
+	@:optional var trail_alpha:Null<Float>;
+	@:optional var trail_diff:Null<Float>;
 
-	var shake_screen:Bool;
-	var shake_intensity:Float;
-	var shake_duration:Float;
+	@:optional var flixel_trail:Bool;
+
+	@:optional var noteskin:String;
+	@:optional var vocals_file:String;
+
+	@:optional var health_drain:Bool;
+	@:optional var drain_amount:Float;
+	@:optional var drain_floor:Float;
+
+	@:optional var shake_screen:Bool;
+	@:optional var shake_intensity:Float;
+	@:optional var shake_duration:Float;
 	@:optional var _editor_isPlayer:Null<Bool>;
 }
 
@@ -69,7 +60,6 @@ class Character extends FlxSprite
 	public var colorTween:FlxTween;
 	public var holdTimer:Float = 0;
 	public var heyTimer:Float = 0;
-	var playState:PlayState;
 	public var specialAnim:Bool = false;
 	public var animationNotes:Array<Dynamic> = [];
 	public var stunned:Bool = false;
@@ -107,8 +97,13 @@ class Character extends FlxSprite
 	public var originalFlipX:Bool = false;
 	public var editorIsPlayer:Null<Bool> = null;
 	public var healthColorArray:Array<Int> = [255, 0, 0];
-	public var winningColorArray:Array<Int> = [255, 0, 0];
-	public var losingColorArray:Array<Int> = [255, 0, 0];
+
+	public var trailLength:Null<Int> = 4;
+	public var trailDelay:Null<Int> = 24;
+	public var trailAlpha:Null<Float> = 0.3;
+	public var trailDiff:Null<Float> = 0.069;
+
+	public var flixelTrail:Bool = false;
 
 	public static var DEFAULT_CHARACTER:String = 'bf'; //In case a character is missing, it will use BF on its place
 	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false, ?isDeathCharacter:Bool = false)
@@ -179,10 +174,9 @@ class Character extends FlxSprite
 	public function loadCharacterFile(json:CharacterFile)
 	{
 		isAnimateAtlas = false;
-		
+
 		#if flxanimate
-		var animToFind:String = Paths.getPath('images/' + json.image + '/Animation.json', TEXT);
-		if (#if MODS_ALLOWED FileSystem.exists(animToFind) || #end Assets.exists(animToFind))
+		if (Paths.fileExists('images/' + json.image + '/Animation.json', TEXT))
 			isAnimateAtlas = true;
 		#end
 
@@ -224,6 +218,14 @@ class Character extends FlxSprite
 		healthIcon = json.healthicon;
 		singDuration = json.sing_duration;
 		flipX = !!json.flip_x;
+
+		trailLength = json.trail_length;
+		trailDelay = json.trail_delay;
+		trailAlpha = json.trail_alpha;
+		trailDiff = json.trail_diff;
+
+		flixelTrail = json.flixel_trail;
+
 		if(json.no_antialiasing) {
 			antialiasing = false;
 			noAntialiasing = true;
@@ -243,14 +245,6 @@ class Character extends FlxSprite
 
 		if(json.healthbar_colors != null && json.healthbar_colors.length > 2)
 			healthColorArray = json.healthbar_colors;
-
-		if(json.winning_colors != null && json.winning_colors.length > 2)
-			winningColorArray = json.winning_colors;
-		else winningColorArray = healthColorArray;
-
-		if(json.losing_colors != null && json.losing_colors.length > 2)
-			losingColorArray = json.losing_colors;
-		else losingColorArray = healthColorArray;
 
 		antialiasing = !noAntialiasing;
 		if(!ClientPrefs.globalAntialiasing) antialiasing = false;
@@ -326,7 +320,7 @@ class Character extends FlxSprite
 			dance();
 			finishAnimation();
 		}
-		
+
 		switch(curCharacter)
 		{
 			case 'pico-speaker':
@@ -415,7 +409,7 @@ class Character extends FlxSprite
 		{
 			if(value) atlas.anim.pause();
 			else atlas.anim.resume();
-		} 
+		}
 
 		return value;
 	}
@@ -478,7 +472,7 @@ class Character extends FlxSprite
 				danced = !danced;
 		}
 	}
-	
+
 	function loadMappedAnims():Void
 	{
 		var noteData:Array<SwagSection> = Song.loadFromJson('picospeaker', Paths.formatToSongPath(PlayState.SONG.song)).notes;

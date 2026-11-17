@@ -1,9 +1,7 @@
-<!-- this is an secret -->
-# NOTE
-This is not the JS Engine base repo. This branch is discontinued.
+<!-- this is a secret -->
 <h1 align="center">
   <br>
-  <a href="https://github.com/JordanSantiagoYT/FNF-JS-Engine"><img src="/art/iconOG.png" alt="JSengine" width="150"></a>
+  <a href="https://github.com/JordanSantiagoYT/FNF-JS-Engine"><img src="/include/iconOG.png" alt="JSengine" width="150"></a>
   <br>
   <b>JS Engine</b>
   <br>
@@ -21,8 +19,6 @@ This is not the JS Engine base repo. This branch is discontinued.
 </p>
 
 README.md revamped by [Nael2xd](https://youtube.com/@nael2xd?si=axwJrY_8jdlXUwSm)
-
-_If you're looking for the desktop version, [go here!](https://github.com/JordanSantiagoYT/FNF-JS-Engine)_
 
 ## Welcome
 
@@ -69,9 +65,9 @@ There is like lots and lots of stuff i've missed, but at least you would like th
 
 Frequently Asked Questions (FAQs) are found in [here](https://github.com/JordanSantiagoYT/FNF-JS-Engine/wiki) or you can simply see it below.
 
-**Q: Can I use this port for my mod(s)?**
+**Q: Can I use this engine for my mod(s)?**
 
-A: Yes, you can! just be sure to credit me ([@HomuHomu833 on YouTube](https://www.youtube.com/@HomuHomu833)) and give a link to the Engine's github/gamebanana, or [the link to download the latest release.](https://github.com/JordanSantiagoYT/FNF-JS-Engine/releases/latest)
+A: Yes, you can! just be sure to credit me ([@JordanSantiago on YouTube](https://www.youtube.com/@JordanSantiago)) and give a link to the Engine's github/gamebanana, or [the link to download the latest release.](https://github.com/JordanSantiagoYT/FNF-JS-Engine/releases/latest)
 
 **Q: How do I change and add things?**
 
@@ -81,27 +77,27 @@ A: You do it here the [same way you'd do it in Psych Engine.](https://github.com
 
 A: Report [here.](https://github.com/JordanSantiagoYT/FNF-JS-Engine/issues) Also, **please check if there are already posts about the same issue.**
 
-**Q: I found a *WAY* to fix a bug!**
+**Q: I found a *WAY* to fix a bug, or there are changes I want to make to the source code!**
 
 A: Send [here.](https://github.com/JordanSantiagoYT/FNF-JS-Engine/pulls)
 
 # Compiling JS Engine
 
-Refer to [the Build Instructions](./BUILDING.md)
+Refer to [the Build Instructions](./docs/BUILDING.md)
 
 If you get an error while Compiling, go [here](https://github.com/JordanSantiagoYT/FNF-JS-Engine/issues/359) to see if the issue is on there, if not, make an issue
 
 ## Customization:
 
-if you wish to disable things like *Lua Scripts* or *Video Cutscenes*, you can read over to `Project.xml`
+if you wish to disable things like *Lua Scripts* or *Video Cutscenes*, you can read over to `Project.hxp`
 
-inside `Project.xml`, you will find several variables to customize JS Engine to your liking
+inside `Project.hxp`, you will find several variables to customize JS Engine to your liking
 
-to start you off, disabling Videos should be simple, simply Delete the line `"VIDEOS_ALLOWED"` or comment it out by wrapping the line in XML-like comments, like this: `<!-- YOUR_LINE_HERE -->`
+to start you off, disabling Videos should be simple, simply Delete the line `VIDEOS_ALLOWED.apply(this, true);` or comment it out by adding `//` behind the code block, like this: `// VIDEOS_ALLOWED.apply(this, true);`
 
-same goes for *Lua Scripts*, comment out or delete the line with `LUA_ALLOWED`, this and other customization options are all available within the `Project.xml` file.
+same goes for *Lua Scripts*, comment out or delete the line with `LUA_ALLOWED.apply(this, true);`, this and other customization options are all available within the `Project.hxp` file.
 
-# Contributers
+# Contributors
 
 @JordanSantiagoYT (of course)
 - He's the owner... What do you think?
@@ -118,8 +114,12 @@ same goes for *Lua Scripts*, comment out or delete the line with `LUA_ALLOWED`, 
 @PatoFlamejanteTV
 - Small coding, also made a PDF guide for JS Engine.
 
-@HomuHomu833
-- Ported JS Engine to mobile
+### The rest of the lovely contributors on GitHub! (Psych and JS Engine)
+<a href="https://github.com/JordanSantiagoYT/FNF-JS-Engine/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=JordanSantiagoYT/FNF-JS-Engine" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
 
 <details>
   <summary><h2>OG Psych Engine Credits and Stuff</h2></summary>
@@ -207,3 +207,4 @@ _____________________________________
 * Some stuff based on Week 7's changes has been put in (Background colors on Freeplay, Note splashes)
 * You can reset your Score on Freeplay/Story Mode by pressing Reset button.
 * You can listen to a song or adjust Scroll Speed/Damage taken/etc. on Freeplay by pressing Space.
+

@@ -1,28 +1,16 @@
 package;
 
 import Controls.Control;
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.FlxSubState;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.input.keyboard.FlxKey;
-import flixel.sound.FlxSound;
-import flixel.text.FlxText;
-import flixel.tweens.FlxEase;
-import flixel.tweens.FlxTween;
-import flixel.util.FlxColor;
-import flixel.FlxCamera;
-import flixel.util.FlxStringUtil;
-import options.OptionsState;
 import GameplayChangersSubstate;
+import flixel.input.keyboard.FlxKey;
+import options.OptionsState;
 
 class PauseSubState extends MusicBeatSubstate
 {
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
 
 	var menuItems:Array<String> = [];
-	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Chart Editor', 'Change Gameplay Settings', 'Change Difficulty', 'Options', 'Exit'];
+	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Change Gameplay Settings', 'Change Difficulty', 'Options', 'Exit'];
 	var menuItemsExit:Array<String> = [(PlayState.isStoryMode ? 'Exit to Story Menu' : 'Exit to Freeplay'), 'Exit to Main Menu', 'Exit Game', 'Back'];
 	var difficultyChoices = [];
 	var curSelected:Int = 0;
@@ -33,7 +21,6 @@ class PauseSubState extends MusicBeatSubstate
 	var skipTimeTracker:Alphabet;
 	var curTime:Float = Math.max(0, Conductor.songPosition);
 
-	public static var botplayLockout:Bool = false;
 	public static var inPause:Bool = false;
 	public static var requireRestart:Bool = false;
 
@@ -43,14 +30,10 @@ class PauseSubState extends MusicBeatSubstate
 	{
 		if(CoolUtil.difficulties.length < 2) menuItemsOG.remove('Change Difficulty'); //No need to change difficulty if there is only one!
 
-		if(botplayLockout) menuItemsOG.remove('Toggle Botplay'); //you cant toggle it on MWAHAHAHAHAHA
-
-		if (!mobile.MobileControls.enabled) menuItemsOG.remove('Chart Editor');
-
 		if(PlayState.chartingMode)
 		{
 			menuItemsOG.insert(2, 'Leave Charting Mode');
-			
+
 			var num:Int = 0;
 			if(!PlayState.instance.startingSong)
 			{
@@ -69,7 +52,6 @@ class PauseSubState extends MusicBeatSubstate
 		}
 		difficultyChoices.push('BACK');
 
-
 		pauseMusic = new FlxSound();
 		if(songName != null) {
 			pauseMusic.loadEmbedded(Paths.music(songName), true, true);
@@ -81,33 +63,32 @@ class PauseSubState extends MusicBeatSubstate
 
 		FlxG.sound.list.add(pauseMusic);
 
-		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		var bg:FlxSprite = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+		bg.scale.set(FlxG.width, FlxG.height);
+		bg.updateHitbox();
 		bg.alpha = 0;
-		bg.scrollFactor.set(0, 0);
+		bg.scrollFactor.set();
 		add(bg);
 
-		var levelInfo:FlxText = new FlxText(20, 15, 0, "", 32);
-		levelInfo.text += PlayState.SONG.song;
+		var levelInfo:FlxText = new FlxText(20, 15, 0, PlayState.SONG.song, 32);
 		levelInfo.scrollFactor.set();
 		levelInfo.setFormat(Paths.font("vcr.ttf"), 32);
 		levelInfo.updateHitbox();
 		add(levelInfo);
 
-		var levelDifficulty:FlxText = new FlxText(20, 15 + 32, 0, "", 32);
-		levelDifficulty.text += CoolUtil.difficultyString();
+		var levelDifficulty:FlxText = new FlxText(20, 15 + 32, 0, CoolUtil.difficultyString(), 32);
 		levelDifficulty.scrollFactor.set();
 		levelDifficulty.setFormat(Paths.font('vcr.ttf'), 32);
 		levelDifficulty.updateHitbox();
 		add(levelDifficulty);
 
-		var blueballedTxt:FlxText = new FlxText(20, 15 + 64, 0, "", 32);
-		blueballedTxt.text = "Blueballed: " + PlayState.deathCounter;
+		var blueballedTxt:FlxText = new FlxText(20, 15 + 64, 0, "Blueballed: " + PlayState.deathCounter, 32);
 		blueballedTxt.scrollFactor.set();
 		blueballedTxt.setFormat(Paths.font('vcr.ttf'), 32);
 		blueballedTxt.updateHitbox();
 		add(blueballedTxt);
 
-		practiceText = new FlxText(20, 15 + 101, 0, "PRACTICE MODE", 32);
+		practiceText = new FlxText(20, 15 + 101, 0, "Practice Mode", 32);
 		practiceText.scrollFactor.set();
 		practiceText.setFormat(Paths.font('vcr.ttf'), 32);
 		practiceText.x = FlxG.width - (practiceText.width + 20);
@@ -115,7 +96,7 @@ class PauseSubState extends MusicBeatSubstate
 		practiceText.visible = PlayState.instance.practiceMode;
 		add(practiceText);
 
-		var chartingText:FlxText = new FlxText(20, 15 + 101, 0, "CHARTING MODE", 32);
+		var chartingText:FlxText = new FlxText(20, 15 + 101, 0, "Charting Mode", 32);
 		chartingText.scrollFactor.set();
 		chartingText.setFormat(Paths.font('vcr.ttf'), 32);
 		chartingText.x = FlxG.width - (chartingText.width + 20);
@@ -142,10 +123,6 @@ class PauseSubState extends MusicBeatSubstate
 
 		regenMenu();
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
-
-		addVirtualPad(PlayState.chartingMode ? LEFT_FULL : UP_DOWN, A);
-		addVirtualPadCamera();
-
 		super.create();
 	}
 
@@ -165,15 +142,11 @@ class PauseSubState extends MusicBeatSubstate
 		super.update(elapsed);
 		if (menuItems != menuItemsExit && menuItems.contains('Skip Time')) updateSkipTextStuff();
 
-		var upP = controls.UI_UP_P;
-		var downP = controls.UI_DOWN_P;
-		var accepted = controls.ACCEPT;
-
-		if (upP)
+		if (controls.UI_UP_P)
 		{
 			changeSelection(-1);
 		}
-		if (downP)
+		if (controls.UI_DOWN_P)
 		{
 			changeSelection(1);
 		}
@@ -206,18 +179,18 @@ class PauseSubState extends MusicBeatSubstate
 					{
 						curTime += 150000 * elapsed * (controls.UI_LEFT ? -1 : 1);
 					}
-					if(holdTime > 0.5 && FlxG.sound.music.length >= 3600000 || PlayState.SONG.song.toLowerCase() == 'desert bus' && holdTime > 0.5)
+					if(holdTime > 0.5 && FlxG.sound.music.length >= 3600000)
 					{
 						curTime += 450000 * elapsed * (controls.UI_LEFT ? -1 : 1);
 					}
 
-					if(curTime >= FlxG.sound.music.length || PlayState.SONG.song.toLowerCase() == 'desert bus' && curTime >= 28820000) curTime -= FlxG.sound.music.length;
+					if(curTime >= FlxG.sound.music.length) curTime -= FlxG.sound.music.length;
 					else if(curTime < 0) curTime += FlxG.sound.music.length;
 					updateSkipTimeText();
 				}
 		}
 
-		if (accepted && (cantUnpause <= 0 || !ClientPrefs.controllerMode))
+		if (controls.ACCEPT && (cantUnpause <= 0 || !ClientPrefs.controllerMode))
 		{
 			if (menuItems == difficultyChoices)
 			{
@@ -273,28 +246,22 @@ class PauseSubState extends MusicBeatSubstate
 				case "End Song":
 					close();
 					PlayState.instance.finishSong(true);
-				case "Chart Editor":
-					if (!ClientPrefs.antiCheatEnable)
-						PlayState.instance.openChartEditor();
-					else {
-						close();
-						PlayState.SONG = Song.loadFromJson('Anti-cheat-song', 'Anti-cheat-song');
-						LoadingState.loadAndSwitchState(PlayState.new);
-					}
+				case 'Chart Editor':
+					FlxG.switchState(editors.ChartingState.new);
 					MusicBeatState.windowNameSuffix = " - Chart Editor";
+					PlayState.chartingMode = true;
 				case "Change Gameplay Settings":
 					persistentUpdate = false;
-					removeVirtualPad();
 					openSubState(new GameplayChangersSubstate());
 					GameplayChangersSubstate.inThePauseMenu = true;
 				case 'Toggle Botplay':
 					PlayState.instance.cpuControlled = !PlayState.instance.cpuControlled;
 					PlayState.changedDifficulty = true;
-					if (PlayState.instance.botplayTxt != null) 
+					if (PlayState.instance.botplayTxt != null)
 					{
-					PlayState.instance.botplayTxt.visible = PlayState.instance.cpuControlled;
-					PlayState.instance.botplayTxt.alpha = 1;
-					PlayState.instance.botplaySine = 0;
+						PlayState.instance.botplayTxt.visible = PlayState.instance.cpuControlled;
+						PlayState.instance.botplayTxt.alpha = 1;
+						PlayState.instance.botplaySine = 0;
 					}
 				case "Options":
 					FlxG.switchState(OptionsState.new);
@@ -317,22 +284,22 @@ class PauseSubState extends MusicBeatSubstate
 					PlayState.deathCounter = 0;
 					PlayState.seenCutscene = false;
 
-					WeekData.loadTheFirstEnabledMod();
+					Mods.loadTopMod();
 					if(PlayState.isStoryMode) {
 						FlxG.switchState(StoryMenuState.new);
 					} else if (!PlayState.isStoryMode) {
 						FlxG.switchState(FreeplayState.new);
 					}
-					FlxG.sound.playMusic(Paths.music('freakyMenu-' + ClientPrefs.daMenuMusic));
+					Paths.playMenuMusic(true);
 					PlayState.changedDifficulty = false;
 					PlayState.chartingMode = false;
 			case "Exit to Main Menu":
 					PlayState.deathCounter = 0;
 					PlayState.seenCutscene = false;
 
-					WeekData.loadTheFirstEnabledMod();
-						FlxG.switchState(MainMenuState.new);
-					FlxG.sound.playMusic(Paths.music('freakyMenu-' + ClientPrefs.daMenuMusic));
+					Mods.loadTopMod();
+					FlxG.switchState(MainMenuState.new);
+					Paths.playMenuMusic(true);
 					PlayState.changedDifficulty = false;
 					PlayState.chartingMode = false;
 			case "Exit Game":
@@ -341,21 +308,12 @@ class PauseSubState extends MusicBeatSubstate
 			case "Back":
 					menuItems = menuItemsOG;
 					regenMenu();
-			case "Exit to your Mother":
+			case "Exit To Your Mother": //this was case sensitive, so the entire time this would softlock your game
 					trace ("YO MAMA");
-					var aLittleCrashing:FlxSprite = null;
-					aLittleCrashing.destroy();
+					throw "lol";
 				}
 			}
 		}
-	}
-
-	override function closeSubState() {
-		persistentUpdate = true;
-		super.closeSubState();
-		removeVirtualPad();
-		addVirtualPad(PlayState.chartingMode ? LEFT_FULL : UP_DOWN, A);
-		addVirtualPadCamera();
 	}
 
 	function deleteSkipTimeText()
@@ -461,7 +419,7 @@ class PauseSubState extends MusicBeatSubstate
 		curSelected = 0;
 		changeSelection();
 	}
-	
+
 	function updateSkipTextStuff()
 	{
 		if(skipTimeText != null || skipTimeTracker != null) {

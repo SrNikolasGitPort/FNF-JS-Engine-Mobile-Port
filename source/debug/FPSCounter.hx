@@ -1,114 +1,208 @@
 package debug;
 
-import debug.Memory;
-import flixel.util.FlxStringUtil;
-import lime.system.System;
-import mem.GetTotalMemory;
+import debug.mem.GetTotalMemory;
+import lime.system.System as LimeSystem;
+import openfl.events.Event;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
+import openfl.text.TextFormatAlign;
 
 class FPSCounter extends TextField
 {
-	public var currentFPS(default, null):Float;
+  public var currentFPS(default, null):Float;
 
-	/*
-	* The current memory usage (WARNING: This might NOT your total memory usage, rather it might show the garbage collector memory if you aren't running on a C++ platform.)
-	*/
-	public var memory(get, never):Float;
-	inline function get_memory():Float
-		return GetTotalMemory.getCurrentRSS();
+  var lastText:String = "";
+  var outlineDirty:Bool = true;
+  var _outlineTimer:Float = 0;
 
-	var mempeak(get, never):Float;
-	inline function get_mempeak():Float
-	        return GetTotalMemory.getPeakRSS();
+  /*
+   * The current memory usage (WARNING: This might NOT your total memory usage, rather it might show the garbage collector memory if you aren't running on a C++ platform.)
+   */
+  public var memory(get, never):Float;
 
-	@:noCompletion private var times:Array<Float>;
+  inline function get_memory():Float
+    return GetTotalMemory.getCurrentRSS();
 
-	public function new(x:Float = 10, y:Float = 10, color:Int = 0x00000000)
-	{
-		super();
+  var mempeak(get, never):Float;
 
-		positionFPS(x, y);
+  inline function get_mempeak():Float
+    return GetTotalMemory.getPeakRSS();
 
-		currentFPS = 0;
-		selectable = false;
-		mouseEnabled = false;
-		defaultTextFormat = new TextFormat("VCR OSD Mono", 12, color);
-		autoSize = LEFT;
-		multiline = true;
-		text = "FPS: ";
+  private var _framesPassed:Int = 0;
+  private var _updateClock:Float = 0;
+  private var _previousTime:Float = 0;
 
-		times = [];
-	}
+  public var align(default, set):TextFormatAlign;
 
-	var timeColor:Float = 0.0;
+  public function new(x:Float = 10, y:Float = 10, color:Int = 0x00000000)
+  {
+    super();
 
-	var fpsMultiplier:Float = 1.0;
-	var deltaTimeout:Float = 0.0;
-	public var timeoutDelay:Float = 50;
-	var now:Float = 0;
-	// Event Handlers
-	override function __enterFrame(deltaTime:Float):Void
-	{
-		if (!ClientPrefs.showFPS) return;
-		now = haxe.Timer.stamp() * 1000;
-		times.push(now);
-		while (times[0] < now - 1000 / fpsMultiplier) times.shift();
-		if (deltaTimeout <= timeoutDelay)
-		{
-			deltaTimeout += deltaTime;
-			return;
-		}
+    this.x = x;
+    this.y = y;
 
-		if (Std.isOfType(FlxG.state, PlayState) && !PlayState.instance.trollingMode)
-		{
-			try { fpsMultiplier = PlayState.instance.playbackRate; }
-			catch (e:Dynamic) { fpsMultiplier = 1.0; }
-		}
-		else fpsMultiplier = 1.0;
+    currentFPS = 0;
+    selectable = false;
+    mouseEnabled = false;
+    defaultTextFormat = new TextFormat("VCR OSD Mono", 14, color);
+    autoSize = LEFT;
+    multiline = true;
+    text = "FPS: ";
 
-		currentFPS = Math.min(FlxG.drawFramerate, times.length) / fpsMultiplier;
-		updateText();
+    _previousTime = Main.getTime();
 
-		if (ClientPrefs.rainbowFPS)
-		{
-			timeColor = (timeColor % 360.0) + (1.0 / (ClientPrefs.framerate / 120));
-			textColor = FlxColor.fromHSB(timeColor, 1, 1);
-		}
-		else if (!ClientPrefs.ffmpegMode)
-		{
-			textColor = 0xFFFFFFFF;
-			if (currentFPS <= ClientPrefs.framerate / 2 && currentFPS >= ClientPrefs.framerate / 3)
-				textColor = 0xFFFFFF00;
+    FlxG.signals.gameResized.add(function(w, h) {
+      align = align;
+    });
 
-			if (currentFPS <= ClientPrefs.framerate / 3 && currentFPS >= ClientPrefs.framerate / 4)
-				textColor = 0xFFFF8000;
+    addEventListener(Event.ADDED_TO_STAGE, (e:Event) -> {
+      if (align == null) align = #if mobile CENTER #else LEFT #end;
+    });
 
-			if (currentFPS <= ClientPrefs.framerate / 4)
-				textColor = 0xFFFF0000;
-		}
-		// deltaTimeout = 0.0;
-	}
+    addEventListener(Event.ENTER_FRAME, onEnterFrame);
+  }
 
-	public dynamic function updateText():Void   // so people can override it in hscript
-	{
-		text = "FPS: " + (ClientPrefs.ffmpegMode ? ClientPrefs.targetFPS : Math.round(currentFPS));
-		if (ClientPrefs.ffmpegMode)
-			text += " (Rendering Mode)";
+  var timeColor:Float = 0.0;
+  var _lastRainbowPhase:Float = -1.0;
 
-		if (ClientPrefs.showRamUsage) text += "\nMemory: " + FlxStringUtil.formatBytes(memory) + (ClientPrefs.showMaxRamUsage ? " / " + FlxStringUtil.formatBytes(mempeak) : "");
-		if (ClientPrefs.debugInfo)
-		{
-			text += '\nCurrent state: ${Type.getClassName(Type.getClass(FlxG.state))}';
-			if (FlxG.state.subState != null)
-				text += '\nCurrent substate: ${Type.getClassName(Type.getClass(FlxG.state.subState))}';
-			#if !linux text += "\nOS: " + '${System.platformLabel} ${System.platformVersion}'; #end
-		}
-	}
+  var fpsMultiplier:Float = 1.0;
+  var deltaTimeout:Float = 0.0;
 
-	public inline function positionFPS(X:Float, Y:Float, ?scale:Float = 1){
-		scaleX = scaleY = #if android (scale > 1 ? scale : 1) #else (scale < 1 ? scale : 1) #end;
-		x = FlxG.game.x + X;
-		y = FlxG.game.y + Y;
-	}
+  public var timeoutDelay:Float = 50;
+
+  var now:Float = 0;
+
+  // Event Handlers
+  private function onEnterFrame(e:Event):Void
+  {
+    if (!ClientPrefs.showFPS) return;
+
+    final now = Main.getTime();
+    final deltaTime = Math.max(now - _previousTime, 0);
+    _previousTime = now;
+
+    _framesPassed++;
+    _updateClock += deltaTime;
+
+    if (_updateClock >= 1000)
+    {
+      var multiplier:Float = 1.0;
+
+      if (Std.isOfType(FlxG.state, PlayState) && !PlayState.instance.trollingMode)
+      {
+        try
+        {
+          multiplier = PlayState.instance.playbackRate;
+        }
+        catch (e:Dynamic)
+          multiplier = 1.0;
+      }
+
+      currentFPS = (_framesPassed / multiplier);
+      currentFPS = Math.min(currentFPS, FlxG.drawFramerate);
+
+      updateText();
+
+      _framesPassed = 0;
+      _updateClock = 0;
+    }
+
+    updateColors();
+  }
+
+  public dynamic function updateColors():Void
+  {
+    if (ClientPrefs.ffmpegMode) return;
+
+    if (ClientPrefs.rainbowFPS)
+    {
+      timeColor = (timeColor % 360.0) + (1.0 / (ClientPrefs.framerate / 120));
+      if (timeColor != _lastRainbowPhase)
+      {
+        _lastRainbowPhase = timeColor;
+        var newColor:Int = FlxColor.fromHSB(timeColor, 1, 1);
+        if (newColor != textColor) textColor = newColor;
+      }
+    } else
+    {
+      var newColor:Int = textColor;
+      if (currentFPS <= ClientPrefs.framerate / 4) newColor = 0xFFFF0000;
+      else if (currentFPS <= ClientPrefs.framerate / 3) newColor = 0xFFFF8000;
+      else if (currentFPS <= ClientPrefs.framerate / 2) newColor = 0xFFFFFF00;
+      else newColor = 0xFFFFFFFF;
+
+      if (newColor != textColor) textColor = newColor;
+    }
+  }
+
+  public dynamic function updateText():Void // so people can override it in hscript
+  {
+    text = "FPS: " + (ClientPrefs.ffmpegMode ? ClientPrefs.targetFPS : Math.round(currentFPS));
+    if (ClientPrefs.ffmpegMode) text += " (Rendering Mode)";
+
+    if (ClientPrefs.showRamUsage) text += "\nMemory: "
+      + MemoryUtil.formatMemory(memory)
+      + (ClientPrefs.showMaxRamUsage ? " / " + MemoryUtil.formatMemory(mempeak) : "");
+    if (ClientPrefs.debugInfo)
+    {
+      text += '\nCurrent state: ${Type.getClassName(Type.getClass(FlxG.state))}';
+      if (FlxG.state.subState != null) text += '\nCurrent substate: ${Type.getClassName(Type.getClass(FlxG.state.subState))}';
+      if (LimeSystem.platformName == LimeSystem.platformVersion
+        || LimeSystem.platformVersion == null) text += '\nOS: ${LimeSystem.platformName}' #if cpp + ' ${PlatformUtil.getArch()}' #end;
+    else
+      text += '\nOS: ${LimeSystem.platformName}' #if cpp + ' ${PlatformUtil.getArch()}' #end + ' - ${LimeSystem.platformVersion}';
+
+      text += '\nVersion: ${MainMenuState.psychEngineJSVersion}' #if commit + '(Commit ${MainMenuState.gitCommit})' #end;
+    }
+  }
+
+  @:noCompletion
+  private function set_align(val)
+  {
+    align = defaultTextFormat.align = switch (val)
+    {
+      default:
+        this.x = 10;
+        autoSize = LEFT;
+        LEFT;
+
+      case CENTER:
+        this.x = (this.stage.stageWidth - this.textWidth) * 0.5;
+        autoSize = CENTER;
+        CENTER;
+
+      case RIGHT:
+        this.x = (this.stage.stageWidth - this.textWidth) - 10;
+        autoSize = RIGHT;
+        RIGHT;
+    }
+    #if mobile
+    layoutMobile();
+    #end
+    return align;
+  }
+
+  #if mobile
+  /**
+   * Phones: original text size, kept away from the corner (notches and rounded corners cover it there) and with a dark
+   * outline so it can be read over any background. It follows the screen size, so it looks the same on every phone.
+   */
+  function layoutMobile():Void
+  {
+    if (stage == null) return;
+    final size = 14; // original size
+    if (defaultTextFormat.size != size)
+    {
+      final format = defaultTextFormat;
+      format.size = size;
+      format.align = LEFT;
+      defaultTextFormat = format;
+      setTextFormat(format);
+    }
+    if (filters.length == 0) filters = [new openfl.filters.GlowFilter(0x000000, 1, 5, 5, 8, 1)];
+    autoSize = LEFT;
+    this.x = Math.max(28, stage.stageWidth * 0.05);
+    this.y = Math.max(12, stage.stageHeight * 0.03);
+  }
+  #end
 }

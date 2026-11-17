@@ -1,115 +1,112 @@
-/*
- * Copyright (C) 2025 Mobile Porting Team
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
-
-
 package mobile.options;
 
+import mobile.MobileControls;
+import mobile.objects.HitboxPreview;
 import options.BaseOptionsMenu;
 import options.Option;
-#if sys
-import sys.io.File;
-#end
-import flixel.FlxG;
-import flixel.input.keyboard.FlxKey;
 
+/**
+ * "Mobile Options": everything about the touch controls.
+ * The hitbox preview at the back redraws live while you change the options.
+ */
 class MobileOptionsSubState extends BaseOptionsMenu
 {
-	final hintOptions:Array<String> = ["No Gradient", "No Gradient (Old)", "Gradient", "Hidden"];
+	var preview:HitboxPreview;
 
 	public function new()
 	{
 		title = 'Mobile Options';
-		rpcTitle = 'Mobile Options Menu'; // for Discord Rich Presence, fuck it
+		rpcTitle = 'Mobile Options Menu';
 
-		var option:Option = new Option('Extra Controls',
-		'If checked, extra ${MobileControls.mode == "Hitbox" ? 'hint' : 'button'} to simulate pressing the space bar will be enabled.',
-		'mobileCEx',
-		'bool',
-		false);
-		addOption(option);
-
-		var option:Option = new Option('Taunt on Extra Controls',
-		'If checked, when you press to extra ${MobileControls.mode == "Hitbox" ? 'hint' : 'button'} bf will be taunt.',
-		'mobileCExTaunt',
-		'bool',
-		true);
-		addOption(option);
-
-		var option:Option = new Option('Mobile Controls Opacity',
-		'Selects the opacity for the mobile buttons (be careful not to put it at 0 and lose track of your buttons).',
-		'mobileCAlpha',
-		'percent',
-		null);
-		option.scrollSpeed = 1;
-		option.minValue = 0.0;
-		option.maxValue = 1;
-		option.changeValue = 0.1;
-		option.decimals = 1;
-		option.onChange = () ->
+		var option:Option = new Option('Screen:', 'Ratio: the normal 16:9 picture, with black bars on wide phones.\nFull Screen: same picture and HUD, but the scenery fills the bars (no zoom, nothing cut).\nStretched: distorts the picture to fill the display.', 'mobileScaleMode', 'string',
+			'Ratio', ['Ratio', 'Full Screen', 'Stretched']);
+		option.onChange = function()
 		{
-			virtualPad.alpha = 0; // what? that fixed somehow
-			virtualPad.alpha = curOption.getValue();
-			if (MobileControls.enabled) {
-				TitleState.volumeUpKeys = FlxG.sound.volumeUpKeys = [];
-				TitleState.volumeDownKeys = FlxG.sound.volumeDownKeys = [];
-				TitleState.muteKeys = FlxG.sound.muteKeys = [];
-			} else {
-				TitleState.volumeUpKeys = FlxG.sound.volumeUpKeys = [FlxKey.PLUS, FlxKey.NUMPADPLUS];
-				TitleState.volumeDownKeys = FlxG.sound.volumeDownKeys = [FlxKey.MINUS, FlxKey.NUMPADMINUS];
-				TitleState.muteKeys = FlxG.sound.muteKeys = [FlxKey.ZERO, FlxKey.NUMPADZERO];
-			}
+			MobileControls.applyScaleMode();
+			MobileControls.reload();
+			refresh();
 		};
 		addOption(option);
 
-		#if mobile
-		var option:Option = new Option('Allow Phone Screensaver',
-		'If checked, the phone will go sleep after going inactive for few seconds.\n(The time depends on your phone\'s options)',
-		'screensaver',
-		'bool',
-		false);
-		option.onChange = () -> lime.system.System.allowScreenTimeout = curOption.getValue();
+
+		option = new Option('Pad Opacity', 'How visible the menu buttons (D-pad, A, B, X, Y...) are.', 'mobilePadAlpha', 'percent', 0.6);
+		option.scrollSpeed = 1;
+		option.minValue = 0.1;
+		option.maxValue = 1;
+		option.changeValue = 0.05;
+		option.decimals = 2;
+		option.onChange = refresh;
 		addOption(option);
-		#end
 
-		if (MobileControls.mode == "Hitbox")
-		{
-			var option:Option = new Option('Hitbox Design',
-			'Choose how your hitbox should look like.',
-			'hitboxType',
-			'string',
-			null,
-			hintOptions);
-			addOption(option);
+		option = new Option('Hitbox Opacity', 'How visible the four lanes are while playing.\n0% = invisible but they still work.', 'hitboxAlpha', 'percent', 0.35);
+		option.scrollSpeed = 1;
+		option.minValue = 0;
+		option.maxValue = 1;
+		option.changeValue = 0.05;
+		option.decimals = 2;
+		option.onChange = refresh;
+		addOption(option);
 
-			var option:Option = new Option('Hitbox Position',
-			'If checked, the hitbox will be put at the bottom of the screen, otherwise will stay at the top.',
-			'hitboxPos',
-			'bool',
-			true);
-			addOption(option);
-		}
+		option = new Option('Hitbox Style:', 'Gradient fades the lanes from the bottom,\nFlat is a solid color, Outline only draws the borders.', 'hitboxStyle',
+			'string', 'Gradient', ['Gradient', 'Flat', 'Outline']);
+		option.onChange = refresh;
+		addOption(option);
 
-		cameras = [FlxG.cameras.list[FlxG.cameras.list.length-1]];
+		option = new Option('Hitbox Position:', 'Full uses the whole screen height,\nBottom only the lower part (fewer accidental taps).', 'hitboxPosition',
+			'string', 'Full', ['Full', 'Bottom']);
+		option.onChange = refresh;
+		addOption(option);
+
+		option = new Option('Hide Hitbox Hints', 'Never draws the four lanes while playing (not even when you touch them).\nThey still work, you just play on the note strums.', 'hideHitboxHints',
+			'bool', false);
+		option.onChange = refresh;
+		addOption(option);
+
+		option = new Option('Extra Button', 'Shows a Bot Energy button in the top-left corner during songs.', 'mobileExtraButtons', 'bool', false);
+		option.onChange = refresh;
+		addOption(option);
+
+		option = new Option('Vibration', 'Short vibration every time you press a button.', 'mobileVibration', 'bool', false);
+		option.onChange = refresh;
+		addOption(option);
 
 		super();
+		rebuildPreview();
+	}
+
+	function refresh():Void
+	{
+		if (MobileControls.instance != null)
+			MobileControls.instance.refresh();
+		rebuildPreview();
+	}
+
+	function rebuildPreview():Void
+	{
+		final controls = MobileControls.instance;
+		if (controls == null)
+			return;
+
+		if (preview != null)
+		{
+			remove(preview, true);
+			preview.destroy();
+		}
+
+		// a small framed picture in the top-right corner (the old full-screen preview made the menu hard to read)
+		preview = new HitboxPreview(1280 - 16 - 240, 24, 240, 135, ClientPrefs.hitboxAlpha, switch (ClientPrefs.hitboxStyle)
+		{
+			case 'Flat': 1;
+			case 'Outline': 2;
+			default: 0;
+		}, ClientPrefs.hitboxPosition == 'Bottom', ClientPrefs.hideHitboxHints, ClientPrefs.mobileExtraButtons);
+		preview.assignCamera(controls.camera);
+		add(preview);
+	}
+
+	override function destroy():Void
+	{
+		preview = null;
+		super.destroy();
 	}
 }

@@ -1,14 +1,7 @@
 package editors;
 
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.addons.display.FlxGridOverlay;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
-import flixel.sound.FlxSound;
+import Alphabet;
+import DialogueBoxPsych;
 import flixel.addons.ui.FlxInputText;
 import flixel.addons.ui.FlxUI9SliceSprite;
 import flixel.addons.ui.FlxUI;
@@ -17,21 +10,10 @@ import flixel.addons.ui.FlxUIInputText;
 import flixel.addons.ui.FlxUINumericStepper;
 import flixel.addons.ui.FlxUITabMenu;
 import flixel.ui.FlxButton;
-import openfl.net.FileReference;
+import lime.system.Clipboard;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
-import flash.net.FileFilter;
-import haxe.Json;
-import DialogueBoxPsych;
-import flixel.FlxCamera;
-import flixel.group.FlxSpriteGroup;
-import lime.system.Clipboard;
-import Alphabet;
-#if sys
-import sys.io.File;
-#end
-
-using StringTools;
+import openfl.net.FileReference;
 
 class DialogueCharacterEditorState extends MusicBeatState
 {
@@ -39,9 +21,19 @@ class DialogueCharacterEditorState extends MusicBeatState
 	var daText:TypedAlphabet = null;
 	var music:EditingMusic;
 
-	private static var TIP_TEXT_MAIN:String;
-	private static var TIP_TEXT_OFFSET:String;
+	private static var TIP_TEXT_MAIN:String = 'JKLI - Move camera (Hold Shift to move 4x faster)
+	\nQ/E - Zoom out/in
+	\nR - Reset Camera
+	\nH - Toggle Speech Bubble
+	\nSpace - Reset text';
 
+	private static var TIP_TEXT_OFFSET:String = 'JKLI - Move camera (Hold Shift to move 4x faster)
+	\nQ/E - Zoom out/in
+	\nR - Reset Camera
+	\nH - Toggle Ghosts
+	\nWASD - Move Looping animation offset (Red)
+	\nArrow Keys - Move Idle/Finished animation offset (Blue)
+	\nHold Shift to move offsets 10x faster';
 	var tipText:FlxText;
 	var offsetLoopText:FlxText;
 	var offsetIdleText:FlxText;
@@ -69,7 +61,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		music = new EditingMusic();
 
 		FlxG.cameras.add(camHUD, false);
-		
+
 		mainGroup = new FlxSpriteGroup();
 		mainGroup.cameras = [camGame];
 		hudGroup = new FlxSpriteGroup();
@@ -80,7 +72,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		character = new DialogueCharacter();
 		character.scrollFactor.set();
 		mainGroup.add(character);
-		
+
 		ghostLoop = new DialogueCharacter();
 		ghostLoop.alpha = 0;
 		ghostLoop.color = FlxColor.RED;
@@ -88,7 +80,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		ghostLoop.jsonFile = character.jsonFile;
 		ghostLoop.cameras = [camGame];
 		add(ghostLoop);
-		
+
 		ghostIdle = new DialogueCharacter();
 		ghostIdle.alpha = 0;
 		ghostIdle.color = FlxColor.BLUE;
@@ -107,36 +99,6 @@ class DialogueCharacterEditorState extends MusicBeatState
 		box.setGraphicSize(Std.int(box.width * 0.9));
 		box.updateHitbox();
 		hudGroup.add(box);
-
-		if (mobile.MobileControls.enabled) {
-		TIP_TEXT_MAIN =
-	'\nX - Reset Camera
-	\nY - Toggle Speech Bubble
-	\nA - Reset text';
-	
-	     TIP_TEXT_OFFSET =
-	'\nX - Reset Camera
-	\nY - Toggle Ghosts
-	\nTop Arrow Keys - Move Looping animation offset (Red)
-	\nBottom Arrow Keys - Move Idle/Finished animation offset (Blue)
-	\nHold Z to move offsets 10x faster';
-	} else {
-	    TIP_TEXT_MAIN =
-	'JKLI - Move camera (Hold Shift to move 4x faster)
-	\nQ/E - Zoom out/in
-	\nR - Reset Camera
-	\nH - Toggle Speech Bubble
-	\nSpace - Reset text';
-	
-	     TIP_TEXT_OFFSET =
-	'JKLI - Move camera (Hold Shift to move 4x faster)
-	\nQ/E - Zoom out/in
-	\nR - Reset Camera
-	\nH - Toggle Ghosts
-	\nWASD - Move Looping animation offset (Red)
-	\nArrow Keys - Move Idle/Finished animation offset (Blue)
-	\nHold Shift to move offsets 10x faster';
-	     }
 
 		tipText = new FlxText(10, 10, FlxG.width - 20, TIP_TEXT_MAIN, 8);
 		tipText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -177,9 +139,6 @@ class DialogueCharacterEditorState extends MusicBeatState
 		FlxG.mouse.visible = true;
 		updateCharTypeBox();
 
-		addVirtualPad(DIALOGUE_PORTRAIT_EDITOR, DIALOGUE_PORTRAIT_EDITOR);
-		addVirtualPadCamera();
-		
 		super.create();
 	}
 
@@ -194,7 +153,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		UI_typebox.x = 900;
 		UI_typebox.y = FlxG.height - UI_typebox.height - 50;
 		UI_typebox.scrollFactor.set();
-		UI_typebox.camera = camHUD;
+		UI_typebox.cameras = [camHUD];
 		addTypeUI();
 		add(UI_typebox);
 
@@ -207,7 +166,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		UI_mainbox.x = UI_typebox.x + UI_typebox.width;
 		UI_mainbox.y = FlxG.height - UI_mainbox.height - 50;
 		UI_mainbox.scrollFactor.set();
-		UI_mainbox.camera = camHUD;
+		UI_mainbox.cameras = [camHUD];
 		addAnimationsUI();
 		addCharacterUI();
 		add(UI_mainbox);
@@ -246,6 +205,10 @@ class DialogueCharacterEditorState extends MusicBeatState
 		tab_group.add(leftCheckbox);
 		tab_group.add(centerCheckbox);
 		tab_group.add(rightCheckbox);
+
+		for (i in tab_group.members)
+			i.cameras = [camHUD];
+
 		UI_typebox.addGroup(tab_group);
 	}
 
@@ -275,7 +238,8 @@ class DialogueCharacterEditorState extends MusicBeatState
 				idleInputText.text = animShit.idle_name;
 			}
 		});
-		
+		animationDropDown.header.cameras = [camHUD]; //haxe is stupid, i have to set the header manually or it renders on camGame
+
 		animationInputText = new FlxUIInputText(15, 85, 80, '', 8);
 		blockPressWhileTypingOn.push(animationInputText);
 		animationInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
@@ -285,7 +249,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		idleInputText = new FlxUIInputText(loopInputText.x, loopInputText.y + 40, 150, '', 8);
 		blockPressWhileTypingOn.push(idleInputText);
 		idleInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
-		
+
 		var addUpdateButton:FlxButton = new FlxButton(10, idleInputText.y + 30, "Add/Update", function() {
 			var theAnim:String = animationInputText.text.trim();
 			if(character.dialogueAnimations.exists(theAnim)) //Update
@@ -326,7 +290,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 				animationDropDown.selectedLabel = lastSelected;
 			}
 		});
-		
+
 		var removeUpdateButton:FlxButton = new FlxButton(100, addUpdateButton.y, "Remove", function() {
 			for (i in 0...character.jsonFile.animations.length) {
 				var animArray:DialogueAnimArray = character.jsonFile.animations[i];
@@ -350,7 +314,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 				}
 			}
 		});
-		
+
 		tab_group.add(new FlxText(animationDropDown.x, animationDropDown.y - 18, 0, 'Animations:'));
 		tab_group.add(new FlxText(animationInputText.x, animationInputText.y - 18, 0, 'Animation name:'));
 		tab_group.add(new FlxText(loopInputText.x, loopInputText.y - 18, 0, 'Loop name on .XML file:'));
@@ -361,6 +325,10 @@ class DialogueCharacterEditorState extends MusicBeatState
 		tab_group.add(addUpdateButton);
 		tab_group.add(removeUpdateButton);
 		tab_group.add(animationDropDown);
+		
+		for (i in tab_group.members)
+			i.cameras = [camHUD];
+		
 		UI_mainbox.addGroup(tab_group);
 		reloadAnimationsDropDown();
 	}
@@ -398,7 +366,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 			character.jsonFile.no_antialiasing = noAntialiasingCheckbox.checked;
 			character.antialiasing = !character.jsonFile.no_antialiasing;
 		};
-		
+
 		tab_group.add(new FlxText(10, imageInputText.y - 18, 0, 'Image file name:'));
 		tab_group.add(new FlxText(10, xStepper.y - 18, 0, 'Position Offset:'));
 		tab_group.add(new FlxText(10, scaleStepper.y - 18, 0, 'Scale:'));
@@ -421,9 +389,13 @@ class DialogueCharacterEditorState extends MusicBeatState
 		tab_group.add(reloadImageButton);
 		tab_group.add(loadButton);
 		tab_group.add(saveButton);
+
+		for (i in tab_group.members)
+			i.cameras = [camHUD];
+
 		UI_mainbox.addGroup(tab_group);
 	}
-	
+
 	function updateCharTypeBox() {
 		leftCheckbox.checked = false;
 		centerCheckbox.checked = false;
@@ -458,7 +430,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		switch(character.jsonFile.dialogue_pos) {
 			case 'right':
 				character.x = FlxG.width - character.width + DialogueBoxPsych.RIGHT_CHAR_X;
-			
+
 			case 'center':
 				character.x = FlxG.width / 2;
 				character.x -= character.width / 2;
@@ -478,7 +450,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		curAnim = 0;
 		animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
 
-		#if desktop
+		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("Dialogue Character Editor", "Editting: " + character.jsonFile.image);
 		#end
@@ -553,7 +525,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 			FlxG.sound.muteKeys = TitleState.muteKeys;
 			FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
 			FlxG.sound.volumeUpKeys = TitleState.volumeUpKeys;
-			if((virtualPad.buttonA.justPressed || FlxG.keys.justPressed.SPACE) && UI_mainbox.selected_tab_id == 'Character') {
+			if(FlxG.keys.justPressed.SPACE && UI_mainbox.selected_tab_id == 'Character') {
 				character.playAnim(character.jsonFile.animations[curAnim].anim);
 				daText.resetDialogue();
 				updateTextBox();
@@ -562,7 +534,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 			//lots of Ifs lol get trolled
 			var offsetAdd:Int = 1;
 			var speed:Float = 300;
-			if(virtualPad.buttonZ.pressed || FlxG.keys.pressed.SHIFT) {
+			if(FlxG.keys.pressed.SHIFT) {
 				speed = 1200;
 				offsetAdd = 10;
 			}
@@ -584,8 +556,18 @@ class DialogueCharacterEditorState extends MusicBeatState
 				&& character.dialogueAnimations.exists(curSelectedAnim)) {
 				var moved:Bool = false;
 				var animShit:DialogueAnimArray = character.dialogueAnimations.get(curSelectedAnim);
-				var controlArrayLoop:Array<Bool> = [FlxG.keys.justPressed.A || virtualPad.buttonLeft2.justPressed, FlxG.keys.justPressed.W || virtualPad.buttonUp2.justPressed, FlxG.keys.justPressed.D || virtualPad.buttonRight2.justPressed, FlxG.keys.justPressed.S || virtualPad.buttonDown2.justPressed];
-				var controlArrayIdle:Array<Bool> = [FlxG.keys.justPressed.LEFT || virtualPad.buttonLeft.justPressed, FlxG.keys.justPressed.UP || virtualPad.buttonUp.justPressed, FlxG.keys.justPressed.RIGHT || virtualPad.buttonRight.justPressed, FlxG.keys.justPressed.DOWN || virtualPad.buttonDown.justPressed];
+				var controlArrayLoop:Array<Bool> = [
+					FlxG.keys.justPressed.A,
+					FlxG.keys.justPressed.W,
+					FlxG.keys.justPressed.D,
+					FlxG.keys.justPressed.S
+				];
+				var controlArrayIdle:Array<Bool> = [
+					FlxG.keys.justPressed.LEFT,
+					FlxG.keys.justPressed.UP,
+					FlxG.keys.justPressed.RIGHT,
+					FlxG.keys.justPressed.DOWN
+				];
 
 				for (i in 0...controlArrayLoop.length) {
 					if (controlArrayLoop[i]) {
@@ -614,7 +596,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 				camGame.zoom += elapsed * camGame.zoom;
 				if(camGame.zoom > 1) camGame.zoom = 1;
 			}
-			if(FlxG.keys.justPressed.H || virtualPad.buttonY.justPressed) {
+			if(FlxG.keys.justPressed.H) {
 				if(UI_mainbox.selected_tab_id == 'Animations') {
 					currentGhosts++;
 					if(currentGhosts > 2) currentGhosts = 0;
@@ -627,7 +609,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 					hudGroup.visible = !hudGroup.visible;
 				}
 			}
-			if(FlxG.keys.justPressed.R || virtualPad.buttonX.justPressed) {
+			if(FlxG.keys.justPressed.R) {
 				camGame.zoom = 1;
 				mainGroup.setPosition(0, 0);
 				hudGroup.visible = true;
@@ -655,10 +637,10 @@ class DialogueCharacterEditorState extends MusicBeatState
 					animText.visible = true;
 					updateTextBox();
 					daText.resetDialogue();
-					
+
 					if(curAnim < 0) curAnim = character.jsonFile.animations.length - 1;
 					else if(curAnim >= character.jsonFile.animations.length) curAnim = 0;
-					
+
 					character.playAnim(character.jsonFile.animations[curAnim].anim);
 					animText.text = 'Animation: '
 						+ character.jsonFile.animations[curAnim].anim
@@ -671,7 +653,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 				lastTab = UI_mainbox.selected_tab_id;
 				currentGhosts = 0;
 			}
-			
+
 			if(UI_mainbox.selected_tab_id == 'Character')
 			{
 				var negaMult:Array<Int> = [1, -1];
@@ -698,7 +680,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 				}
 			}
 
-			if(FlxG.keys.justPressed.ESCAPE || virtualPad.buttonB.justPressed) {
+			if(FlxG.keys.justPressed.ESCAPE) {
 				FlxG.switchState(editors.MasterEditorMenu.new);
 				FlxG.sound.playMusic(Paths.music('freakyMenu-' + ClientPrefs.daMenuMusic), 1);
 				transitioning = true;
@@ -713,7 +695,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 		super.update(elapsed);
 		music.update(elapsed);
 	}
-	
+
 	var _file:FileReference = null;
 	function loadCharacter() {
 		var jsonFilter:FileFilter = new FileFilter('JSON', 'json');
@@ -795,15 +777,11 @@ class DialogueCharacterEditorState extends MusicBeatState
 			var splittedImage:Array<String> = imageInputText.text.trim().split('_');
 			var characterName:String = splittedImage[0].toLowerCase().replace(' ', '');
 
-			#if mobile
-			StorageUtil.saveContent('$characterName.json', data); // gacha horror referance
-			#else
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);
 			_file.addEventListener(Event.CANCEL, onSaveCancel);
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data, characterName + ".json");
-			#end
 		}
 	}
 

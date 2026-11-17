@@ -1,12 +1,9 @@
 package;
 
-import flixel.FlxBasic;
-import flixel.FlxObject;
-import flixel.FlxSubState;
-import MusicBeatState;
-
-import Note.EventNote;
 import Character;
+import MusicBeatState;
+import Note.EventNote;
+import flixel.FlxBasic;
 
 enum Countdown
 {
@@ -37,7 +34,7 @@ class BaseStage extends FlxBasic
 	public var boyfriendGroup(get, never):FlxSpriteGroup;
 	public var dadGroup(get, never):FlxSpriteGroup;
 	public var gfGroup(get, never):FlxSpriteGroup;
-	
+
 	public var camGame(get, never):FlxCamera;
 	public var camHUD(get, never):FlxCamera;
 	public var camOther(get, never):FlxCamera;
@@ -54,7 +51,7 @@ class BaseStage extends FlxBasic
 			FlxG.log.warn('Invalid state for the stage added!');
 			destroy();
 		}
-		else 
+		else
 		{
 			this.game.stages.push(this);
 			super();
@@ -101,7 +98,7 @@ class BaseStage extends FlxBasic
 	function add(object:FlxBasic) game.add(object);
 	function remove(object:FlxBasic) game.remove(object);
 	function insert(position:Int, object:FlxBasic) game.insert(position, object);
-	
+
 	public function addBehindGF(obj:FlxBasic) insert(members.indexOf(game.gfGroup), obj);
 	public function addBehindBF(obj:FlxBasic) insert(members.indexOf(game.boyfriendGroup), obj);
 	public function addBehindDad(obj:FlxBasic) insert(members.indexOf(game.dadGroup), obj);
@@ -128,16 +125,16 @@ class BaseStage extends FlxBasic
 	}
 
 	// overrides
-	function startCountdown() 
+	function startCountdown()
 	{
-		if(onPlayState && !PlayState.instance.skipCountdown) 
+		if(onPlayState && !PlayState.instance.skipCountdown)
 		{
-			PlayState.instance.startCountdown(); 
+			PlayState.instance.startCountdown();
 			return true;
 		}
 		else return false;
 	}
-	function endSong() 
+	function endSong()
 	{
 		if(onPlayState)
 		{
@@ -147,7 +144,7 @@ class BaseStage extends FlxBasic
 		else return false;
 	}
 	function moveCameraSection() if(onPlayState) PlayState.instance.moveCameraSection();
-	function moveCamera(isDad:Bool) if(onPlayState) PlayState.instance.moveCamera(isDad);
+	function moveCamera(focus:String = 'bf') if(onPlayState) PlayState.instance.moveCamera(focus);
 	inline private function get_paused() return game.paused;
 	inline private function get_songName() return game.songName;
 	inline private function get_isStoryMode() return PlayState.isStoryMode;
@@ -179,16 +176,16 @@ class BaseStage extends FlxBasic
 	inline private function get_boyfriendGroup():FlxSpriteGroup return game.boyfriendGroup;
 	inline private function get_dadGroup():FlxSpriteGroup return game.dadGroup;
 	inline private function get_gfGroup():FlxSpriteGroup return game.gfGroup;
-	
+
 	inline private function get_camGame():FlxCamera return game.camGame;
 	inline private function get_camHUD():FlxCamera return game.camHUD;
 	inline private function get_camOther():FlxCamera return game.camOther;
 
-	inline private function get_defaultCamZoom():Float return game.defaultCamZoom;
+	inline private function get_defaultCamZoom():Float return PlayState.instance.defaultCamZoom;
 	inline private function set_defaultCamZoom(value:Float):Float
 	{
-		game.defaultCamZoom = value;
-		return game.defaultCamZoom;
+		PlayState.instance.defaultCamZoom = value;
+		return PlayState.instance.defaultCamZoom;
 	}
 	inline private function get_camFollow():FlxPoint return game.camFollow;
 	inline private function get_camFollowPos():FlxObject return game.camFollowPos;

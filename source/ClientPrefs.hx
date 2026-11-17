@@ -1,23 +1,21 @@
 package;
 
-import flixel.FlxG;
-import flixel.util.FlxSave;
-import flixel.input.keyboard.FlxKey;
-import flixel.graphics.FlxGraphic;
 import Controls;
+import flixel.input.keyboard.FlxKey;
 
 class ClientPrefs { //default settings if it can't find a save file containing your current settings
-	#if mobile
-	public static var screensaver:Bool = false;
-	#end
-	public static var mobileCAlpha:Float = FlxG.onMobile ? 0.6 : 0;
-	public static var mobileCEx:Bool = false;
-	public static var hitboxType:String = "No Gradient";
-	public static var hitboxPos:Bool = true;
-	public static var mobileCPlayStateVpad:Bool = false;
-	public static var mobileCExTaunt:Bool = true;
+	//Mobile Settings (only used by touch builds, but kept everywhere so saves stay compatible)
+	public static var mobilePadAlpha:Float = 0.6; // opacity of the menu D-pad / A / B buttons
+	public static var hitboxAlpha:Float = 0.35; // opacity of the gameplay hitbox lanes
+	public static var hitboxStyle:String = 'Gradient'; // Gradient / Flat / Outline
+	public static var hitboxPosition:String = 'Full'; // Full / Bottom
+	public static var hideHitboxHints:Bool = false; // true = the lanes are never drawn (they still work)
+	public static var mobileVibration:Bool = false; // short vibration on every button press
+	public static var mobileExtraButtons:Bool = false; // shows the Bot Energy button in songs
+	public static var mobileScaleMode:String = 'Ratio'; // Ratio (16:9 with black bars) / Full Screen (normal picture, no bars, no zoom) / Stretched (distorted to the whole screen)
+
 	//Gameplay Settings
-	public static var controllerMode:Bool = mobile.MobileControls.enabled;
+	public static var controllerMode:Bool = false;
 	public static var downScroll:Bool = false;
 	public static var middleScroll:Bool = false;
 	public static var opponentStrums:Bool = true;
@@ -27,15 +25,14 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var noMarvJudge:Bool = false;
 	public static var noReset:Bool = false;
 	public static var antiCheatEnable:Bool = false;
-	public static var instaRestart:Bool = false;
 	public static var ezSpam:Bool = false;
-	public static var spaceVPose:Bool = true;
-	public static var ghostTapAnim:Bool = true;
 	public static var hitsoundVolume:Float = 0;
 	public static var hitsoundType:String = 'osu!mania';
 	public static var voiidTrollMode:Bool = false;
 	public static var trollMaxSpeed:String = 'Medium';
-	public static var missSoundShit:Bool = false;
+	public static var crossFadeLimit:Null<Int> = 4;
+	public static var boyfriendCrossFadeLimit:Null<Int> = 1;
+	public static var crossFadeMode:String = 'Mid-Fight Masses';
 
 	//Visuals & UI
 	public static var noteSkin:String = 'Default';
@@ -44,24 +41,16 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var oppNoteSplashes:Bool = true;
 	public static var showNPS:Bool = true;
 	public static var showComboInfo:Bool = true;
-	public static var maxSplashLimit:Int = 16;
+	public static var maxSplashLimit:Int = #if mobile 8 #else 16 #end; // fewer note splashes alive at once on phones
 	public static var oppNoteAlpha:Float = 0.65;
 	public static var hideHud:Bool = false;
 	public static var tauntOnGo:Bool = true;
 	public static var oldSusStyle:Bool = false;
 	public static var showRendered:Bool = false;
-	public static var showcaseMode:Bool = false;
-	public static var showcaseST:String = 'JS';
-	public static var timeBounce:Bool = true;
-	public static var lengthIntro:Bool = true;
 	public static var botWatermark:Bool = true;
 	public static var missRating:Bool = false;
-	public static var scoreTxtSize:Int = 0;
 	public static var noteColorStyle:String = 'Normal';
 	public static var enableColorShader:Bool = true;
-	public static var iconBopWhen:String = 'Every Beat';
-	public static var cameraPanning:Bool = true;
-	public static var panIntensity:Float = 1;
 	public static var rateNameStuff:String = 'Quotes';
 	public static var timeBarType:String = 'Time Left';
 	public static var scoreStyle:String = 'Psych Engine';
@@ -69,7 +58,6 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var healthBarStyle:String = 'Vanilla';
 	public static var watermarkStyle:String = 'Vanilla';
 	public static var botTxtStyle:String = 'Vanilla';
-	public static var ytWatermarkPosition:String = 'Hidden';
 	public static var strumLitStyle:String = 'Full Anim';
 	public static var bfIconStyle:String = 'Default';
 	public static var ratingType:String = 'Default';
@@ -77,19 +65,12 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var iconBounceType:String = 'New Psych';
 	public static var smoothHealth:Bool = true;
 	public static var smoothHPBug:Bool = false;
-	public static var noBopLimit:Bool = false;
-	public static var ogHPColor:Bool = false;
-	public static var opponentRateCount:Bool = true;
 	public static var flashing:Bool = true;
 	public static var camZooms:Bool = true;
-	public static var ratingCounter:Bool = false;
 	public static var showNotes:Bool = true;
 	public static var scoreZoom:Bool = true;
 	public static var healthBarAlpha:Float = 1;
-	public static var laneUnderlay:Bool = false;
-	public static var laneUnderlayAlpha:Float = 1;
 	public static var showFPS:Bool = true;
-	public static var randomBotplayText:Bool = true;
 	public static var botTxtFade:Bool = true;
 	public static var pauseMusic:String = 'Tea Time';
 	public static var daMenuMusic:String = 'Default';
@@ -106,7 +87,8 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var lowQuality:Bool = false;
 	public static var globalAntialiasing:Bool = true;
 	public static var shaders:Bool = true;
-	public static var cacheOnGPU:Bool = false;
+	// phones: upload textures to the GPU and free the CPU copy (much less RAM, fewer out-of-memory closes)
+	public static var cacheOnGPU:Bool = #if mobile true #else false #end;
 	public static var dynamicSpawnTime:Bool = false;
 	public static var noteSpawnTime:Float = 1;
 	public static var resolution:String = '1280x720';
@@ -125,17 +107,16 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var noHitFuncs:Bool = false;
 	public static var noSkipFuncs:Bool = false;
 	public static var lessBotLag:Bool = false;
+	public static var maxNotes:Int = 0;
 
 	//Secret Debug
 	public static var noGunsRNG:Bool = false;
-	public static var pbRControls:Bool = false;
 	public static var rainbowFPS:Bool = false;
 	public static var noRenderGC:Bool = false;
 
 	//Unused
 	public static var cursing:Bool = true;
 	public static var violence:Bool = true;
-	public static var crossFadeData:Array<Dynamic> = ['Default', 'Healthbar', [255, 255, 255], 0.3, 0.35];
 	public static var noPausing:Bool = false;
 
 	//Note Colors
@@ -178,16 +159,16 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 
 	// Game Renderer
 	public static var ffmpegMode:Bool = false;
-	public static var ffmpegInfo:String = 'None';
 	public static var targetFPS:Float = 60;
 	public static var unlockFPS:Bool = false;
 	public static var renderBitrate:Float = 5.0;
 	public static var vidEncoder:String = 'libx264';
-	public static var oldFFmpegMode:Bool = #if mobile true #else false #end;
+	public static var oldFFmpegMode:Bool = false;
 	public static var lossless:Bool = false;
 	public static var quality:Int = 50;
 	public static var renderGCRate:Float = 5.0;
 	public static var showRemainingTime:Bool = false;
+	public static var renderPath:String = 'assets/gameRenders/';
 
 	//Misc
 	public static var JSEngineRecharts:Bool = false;
@@ -196,11 +177,12 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 	public static var disableAprilFools:Bool = false;
 	public static var rainbowTime:Float = 5.0;
 	public static var autosaveCharts:Bool = true;
+	public static var autosaveTime:Int = 240;
 
 	//Gameplay Modifiers
 	public static var gameplaySettings:Map<String, Dynamic> = [
 		'scrollspeed' => 1.0,
-		'scrolltype' => 'multiplicative', 
+		'scrolltype' => 'multiplicative',
 		// anyone reading this, amod is multiplicative speed mod, cmod is constant speed mod, and xmod is bpm based speed mod.
 		// an amod example would be chartSpeed * multiplier
 		// cmod would just be constantSpeed = chartSpeed
@@ -214,7 +196,6 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 		'healthgain' => 1.0,
 		'healthloss' => 1.0,
 		'instakill' => false,
-		'onlySicks' => false,
 		'practice' => false,
 		'botplay' => false,
 		'randommode' => false,
@@ -235,11 +216,11 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 
 	//Gameplay Offset and Window stuff
 	public static var ratingOffset:Int = 0;
-	public static var perfectWindow:Int = 15;
-	public static var sickWindow:Int = 45;
-	public static var goodWindow:Int = 90;
-	public static var badWindow:Int = 135;
-	public static var safeFrames:Float = 10;
+	public static var perfectWindow:Float = 15.0;
+	public static var sickWindow:Float = 45.0;
+	public static var goodWindow:Float = 90.0;
+	public static var badWindow:Float = 135.0;
+	public static var safeFrames:Float = 10.0;
 	public static var comboOffset:Array<Int> = [0, 0, 0, 0];
 	public static var noteOffset:Int = 0;
 
@@ -251,27 +232,26 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 		'note_up'		=> [W, UP],
 		'note_right'	=> [D, RIGHT],
 		'bot_energy'	=> [CONTROL, NONE],
-		
+
 		'ui_left'		=> [A, LEFT],
 		'ui_down'		=> [S, DOWN],
 		'ui_up'			=> [W, UP],
 		'ui_right'		=> [D, RIGHT],
-		
+
 		'accept'		=> [SPACE, ENTER],
 		'back'			=> [BACKSPACE, ESCAPE],
 		'pause'			=> [ENTER, ESCAPE],
 		'reset'			=> [R, NONE],
-		
+
 		'volume_mute'	=> [ZERO, NONE],
 		'volume_up'		=> [NUMPADPLUS, PLUS],
 		'volume_down'	=> [NUMPADMINUS, MINUS],
-		
+
 		'debug_1'		=> [SEVEN, NONE],
-		'debug_2'		=> [EIGHT, NONE],
-		'qt_taunt'		=> [SPACE, NONE]
+		'debug_2'		=> [EIGHT, NONE]
 	];
 	public static var defaultKeys:Map<String, Array<FlxKey>> = null;
-	
+
 	// i suck at naming things sorry
 	private static var importantMap:Map<String, Array<String>> = [
 		"saveBlackList" => ["keyBinds", "defaultKeys", "defaultArrowRGB", "defaultPixelRGB", "defaultQuantRGB"],
@@ -317,7 +297,7 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 
 	public static function loadPrefs() { //loads settings if it finds a save file containing the settings
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
-		
+
 		for (field in Type.getClassFields(ClientPrefs))
 		{
 			if (Type.typeof(Reflect.field(ClientPrefs, field)) != TFunction)
@@ -355,6 +335,32 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 				Reflect.setField(FlxG.sound, flixelS, flxProp);
 		}
 
+		#if mobile
+		// one-time reset: the Perfect! window could end up at a wrong value (e.g. 11ms) after scrolling the option with touch
+		if (FlxG.save.data.perfectWindowFixed != true)
+		{
+			perfectWindow = 15.0;
+			FlxG.save.data.perfectWindow = 15.0;
+			FlxG.save.data.perfectWindowFixed = true;
+			FlxG.save.flush();
+		}
+		// 32-bit phones run out of memory easily (crash when a song loads): lighter defaults, applied once
+		if (FlxG.save.data.lowMemoryApplied != true)
+		{
+			if (mobile.backend.DeviceInfo.is32Bit)
+			{
+				cacheOnGPU = true;
+				maxSplashLimit = 4;
+				FlxG.save.data.cacheOnGPU = true;
+				FlxG.save.data.maxSplashLimit = 4;
+			}
+			FlxG.save.data.lowMemoryApplied = true;
+			FlxG.save.flush();
+		}
+		// the touch hitbox is read through Controls like a gamepad, never through keyboard events
+		controllerMode = true;
+		#end
+
 		#if DISCORD_ALLOWED DiscordClient.check(); #end
 
 		var save:FlxSave = new FlxSave();
@@ -370,8 +376,9 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 		}
 	}
 
+
 	inline public static function getGameplaySetting(name:String, defaultValue:Dynamic):Dynamic {
-		return /*PlayState.isStoryMode ? defaultValue : */ (gameplaySettings.exists(name) ? gameplaySettings.get(name) : defaultValue);
+		return (gameplaySettings.exists(name) ? gameplaySettings.get(name) : defaultValue);
 	}
 
 	public static function reloadControls() {
@@ -400,3 +407,4 @@ class ClientPrefs { //default settings if it can't find a save file containing y
 		return copiedArray;
 	}
 }
+

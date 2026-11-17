@@ -8,11 +8,9 @@ class StartupState extends MusicBeatState
 	var skipTxt:FlxText;
 
 	var maxIntros:Int = 7;
-	var date:Date = Date.now();
 
 	var canChristmas = false;
 	var canAutism = false;
-
 
 	private var vidSprite:VideoSprite = null;
 	private function startVideo(name:String, ?library:String = null, ?callback:Void->Void = null, canSkip:Bool = true, loop:Bool = false, playOnLoad:Bool = true)
@@ -62,22 +60,20 @@ class StartupState extends MusicBeatState
 
 	override public function create():Void
 	{
-		if (date.getMonth() == 11 && date.getDate() >= 16 && date.getDate() <= 31) //Only triggers if the date is between 12/16 and 12/31
+		#if mobile
+		mobilePadMode = NONE; // the whole screen is the skip button
+		#end
+		if (DateUtils.isChristmas()) //Only triggers if the date is between 12/16 and 12/31
 		{
 			canChristmas = true;
 			maxIntros += 1; //JOLLY SANTA!!!
 		}
-		#if APRIL_FOOLS
-			else if (date.getMonth() == 3 && date.getDate() == 1) // funny
-			{
-				if (!ClientPrefs.disableAprilFools)
-				{
-				canAutism = true;
-				maxIntros += 1; //autism!!!!!!!!!!!!!!!!!!!!!!oubgrebiugerbiuegrs
-				// burger
-				}
-			}
-		#end
+		else if (DateUtils.isAprilFools()) // funny
+		{
+			canAutism = true;
+			maxIntros += 1; //autism!!!!!!!!!!!!!!!!!!!!!!oubgrebiugerbiuegrs
+			// burger
+		}
 		FlxTransitionableState.skipNextTransIn = true;
 		FlxTransitionableState.skipNextTransOut = true;
 		logo = new FlxSprite().loadGraphic(Paths.image('sillyLogo', 'splash'));
@@ -87,7 +83,7 @@ class StartupState extends MusicBeatState
 		logo.active = true;
 		add(logo);
 
-		skipTxt = new FlxText(0, FlxG.height, 0, '${mobile.MobileControls.enabled ? 'Touch Your Screen' : 'Press ENTER'} To Skip', 16);
+		skipTxt = new FlxText(0, FlxG.height, 0, #if mobile 'Tap To Skip' #else 'Press ENTER To Skip' #end, 16);
 		skipTxt.setFormat("Comic Sans MS Bold", 18, FlxColor.WHITE, LEFT, OUTLINE, FlxColor.BLACK);
 		skipTxt.borderSize = 1.5;
 		skipTxt.antialiasing = true;
@@ -171,10 +167,10 @@ class StartupState extends MusicBeatState
 						logo.updateHitbox();
 						logo.screenCenter();
 						FlxTween.tween(logo, {alpha: 1, "scale.x": 1, "scale.y": 1}, 2, {ease: FlxEase.expoOut, onComplete: _ -> onIntroDone(1.5)});
-					} 
-					else 
+					}
+					else
 						doIntro();
-					
+
 				case 7:
 					if (canAutism)
 					{
@@ -184,10 +180,10 @@ class StartupState extends MusicBeatState
 						logo.updateHitbox();
 						logo.screenCenter();
 						FlxTween.tween(logo, {alpha: 1, "scale.x": 1, "scale.y": 1}, 0.95, {ease: FlxEase.linear, onComplete: _ -> onIntroDone()});
-					} 
-					else 
+					}
+					else
 						doIntro();
-					
+
 			}
 		}
 		#end
@@ -195,12 +191,7 @@ class StartupState extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
-		var justTouched:Bool = false;
-		for (touch in FlxG.touches.list)
-			if (touch.justPressed)
-				justTouched = true;
-
-		if (justTouched || FlxG.keys.justPressed.ENTER) FlxG.switchState(TitleState.new);
+		if (FlxG.keys.justPressed.ENTER #if mobile || FlxG.touches.justStarted().length > 0 || controls.BACK #end) FlxG.switchState(TitleState.new);
 		super.update(elapsed);
 	}
 }

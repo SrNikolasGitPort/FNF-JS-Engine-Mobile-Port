@@ -19,7 +19,10 @@ class ErrorState extends MusicBeatState
 	public var errorText:FlxText;
 	override function create()
 	{
-		var bg = new FlxSprite().loadGraphic(Paths.image('menuDesat', 'preload'));
+#if mobile
+mobilePadMode = AB;
+#end
+		final bg = new FlxSprite().loadGraphic(Paths.image('menuDesat', 'preload'));
 		bg.color = FlxColor.GRAY;
 		bg.antialiasing = ClientPrefs.globalAntialiasing;
 		add(bg);
@@ -31,7 +34,6 @@ class ErrorState extends MusicBeatState
 		errorText.borderSize = 2;
 		errorText.screenCenter();
 		add(errorText);
-		addVirtualPad(NONE, A_B);
 		super.create();
 	}
 

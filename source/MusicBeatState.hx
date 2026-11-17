@@ -1,16 +1,11 @@
 package;
 
 import backend.PsychCamera;
-import mobile.MobileControls;
-import mobile.flixel.FlxVirtualPad;
-import flixel.input.actions.FlxActionInput;
-import flixel.util.FlxDestroyUtil;
-import flixel.FlxCamera;
-import flixel.FlxG;
-import flixel.addons.transition.FlxTransitionableState;
 import flixel.addons.ui.FlxUIState;
 import lime.app.Application;
-import openfl.utils.Assets;
+import mobile.MobileInput;
+import mobile.MobileInput.MobileButtonID;
+import mobile.objects.VirtualPad.PadMode;
 
 class MusicBeatState extends FlxUIState
 {
@@ -31,97 +26,6 @@ class MusicBeatState extends FlxUIState
 	inline function get_controls():Controls
 		return PlayerSettings.player1.controls;
 
-	var mobileControls:MobileControls;
-	var virtualPad:FlxVirtualPad;
-	var trackedInputsMobileControls:Array<FlxActionInput> = [];
-	var trackedInputsVirtualPad:Array<FlxActionInput> = [];
-
-	public function addVirtualPad(DPad:FlxDPadMode, Action:FlxActionMode):Void
-	{
-		if (virtualPad != null)
-			removeVirtualPad();
-
-		virtualPad = new FlxVirtualPad(DPad, Action);
-		add(virtualPad);
-
-		controls.setVirtualPadUI(virtualPad, DPad, Action);
-		trackedInputsVirtualPad = controls.trackedInputsUI;
-		controls.trackedInputsUI = [];
-	}
-
-	public function removeVirtualPad():Void
-	{
-		if (trackedInputsVirtualPad.length > 0)
-			controls.removeVirtualControlsInput(trackedInputsVirtualPad);
-
-		if (virtualPad != null)
-			remove(virtualPad);
-	}
-
-	public function addMobileControls(DefaultDrawTarget:Bool = false):Void
-	{
-		if (mobileControls != null)
-			removeMobileControls();
-
-		mobileControls = new MobileControls();
-
-		switch (MobileControls.mode)
-		{
-			case 'Hitbox':
-				controls.setHitBox(mobileControls.hitbox);
-			default:
-				controls.setVirtualPadNOTES(mobileControls.virtualPad, RIGHT_FULL, NONE);
-		}
-
-		trackedInputsMobileControls = controls.trackedInputsNOTES;
-		controls.trackedInputsNOTES = [];
-
-		var camControls:FlxCamera = new FlxCamera();
-		camControls.bgColor.alpha = 0;
-		FlxG.cameras.add(camControls, DefaultDrawTarget);
-
-		mobileControls.cameras = [camControls];
-		mobileControls.visible = false;
-		add(mobileControls);
-	}
-
-	public function removeMobileControls():Void
-	{
-		if (trackedInputsMobileControls.length > 0)
-			controls.removeVirtualControlsInput(trackedInputsMobileControls);
-
-		if (mobileControls != null)
-			remove(mobileControls);
-	}
-
-	public function addVirtualPadCamera(DefaultDrawTarget:Bool = false):Void
-	{
-		if (virtualPad != null)
-		{
-			var camControls:FlxCamera = new FlxCamera();
-			camControls.bgColor.alpha = 0;
-			FlxG.cameras.add(camControls, DefaultDrawTarget);
-			virtualPad.cameras = [camControls];
-		}
-	}
-
-	override function destroy():Void
-	{
-		if (trackedInputsMobileControls.length > 0)
-			controls.removeVirtualControlsInput(trackedInputsMobileControls);
-
-		if (trackedInputsVirtualPad.length > 0)
-			controls.removeVirtualControlsInput(trackedInputsVirtualPad);
-
-		super.destroy();
-
-		if (virtualPad != null)
-			virtualPad = FlxDestroyUtil.destroy(virtualPad);
-
-		if (mobileControls != null)
-			mobileControls = FlxDestroyUtil.destroy(mobileControls);
-	}
-
 	var _psychCameraInitialized:Bool = false;
 
 	public static var windowNameSuffix(default, set):String = "";
@@ -139,8 +43,42 @@ class MusicBeatState extends FlxUIState
 		Application.current.window.title = windowNamePrefix + windowNameSuffix + windowNameSuffix2;
 		return value;
 	}
+	#if mobile
+	/**
+	 * On-screen buttons this state shows (menus: D-pad + A + B by default).
+	 * Set it in the constructor, before the state is created, to change the layout or hide the pad.
+	 */
+	public var mobilePadMode:PadMode = PadMode.FULL;
 
-	override public function new() {
+	/** True for states that play a song: shows the hitbox lanes instead of the pad. */
+	public var mobileHitbox:Bool = false;
+	#end
+
+	/** Extra touch buttons (X / Y) for state-specific shortcuts that are keyboard keys on desktop. */
+	public inline function mobileJustPressed(button:MobileButtonID):Bool
+	{
+		#if mobile
+		return MobileInput.justPressed(button);
+		#else
+		return false;
+		#end
+	}
+
+	public inline function mobilePressed(button:MobileButtonID):Bool
+	{
+		#if mobile
+		return MobileInput.pressed(button);
+		#else
+		return false;
+		#end
+	}
+
+	public var variables:Map<String, Dynamic> = new Map<String, Dynamic>();
+	public static function getVariables()
+		return getState().variables;
+	
+	// this is just because FlxUIState has arguments in it's constructor
+	public function new() {
 		super();
 	}
 
@@ -149,7 +87,7 @@ class MusicBeatState extends FlxUIState
 		var skip:Bool = FlxTransitionableState.skipNextTransOut;
 		super.create();
 
-		if(!_psychCameraInitialized && Type.getClassName(Type.getClass(FlxG.state)) != 'PlayState') initPsychCamera();
+		if(!_psychCameraInitialized && !Main.isPlayState()) initPsychCamera();
 
 		if(!skip) {
 			openSubState(new CustomFadeTransition(0.7, true));
@@ -190,8 +128,6 @@ class MusicBeatState extends FlxUIState
 					rollbackSection();
 			}
 		}
-
-		if(FlxG.save.data != null) FlxG.save.data.fullscreen = FlxG.fullscreen;
 
 		FlxG.autoPause = ClientPrefs.autoPause;
 

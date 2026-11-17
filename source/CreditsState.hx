@@ -1,22 +1,5 @@
 package;
 
-import flash.text.TextField;
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.addons.display.FlxGridOverlay;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
-import flixel.tweens.FlxTween;
-import flixel.tweens.FlxEase;
-#if MODS_ALLOWED
-import sys.FileSystem;
-import sys.io.File;
-#end
-import lime.utils.Assets;
-
-using StringTools;
 
 class CreditsState extends MusicBeatState
 {
@@ -36,12 +19,15 @@ class CreditsState extends MusicBeatState
 
 	override function create()
 	{
+#if mobile
+mobilePadMode = LIST;
+#end
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
 		MusicBeatState.windowNameSuffix = " - Credits";
 
-		#if desktop
+		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("Viewing the Credits", null);
 		#end
@@ -50,46 +36,19 @@ class CreditsState extends MusicBeatState
 		bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		add(bg);
 		bg.screenCenter();
-		
+
 		grpOptions = new FlxTypedGroup<Alphabet>();
 		add(grpOptions);
 
 		#if MODS_ALLOWED
-		var path:String = 'modsList.txt';
-		if(FileSystem.exists(path))
-		{
-			var leMods:Array<String> = CoolUtil.coolTextFile(path);
-			for (i in 0...leMods.length)
-			{
-				if(leMods.length > 1 && leMods[0].length > 0) {
-					var modSplit:Array<String> = leMods[i].split('|');
-					if(!Paths.ignoreModFolders.contains(modSplit[0].toLowerCase()) && !modsAdded.contains(modSplit[0]))
-					{
-						if(modSplit[1] == '1')
-							pushModCreditsToList(modSplit[0]);
-						else
-							modsAdded.push(modSplit[0]);
-					}
-				}
-			}
-		}
-
-		var arrayOfFolders:Array<String> = Paths.getModDirectories();
-		arrayOfFolders.push('');
-		for (folder in arrayOfFolders)
-		{
-			pushModCreditsToList(folder);
-		}
+		for (mod in Mods.parseList().enabled) pushModCreditsToList(mod);
 		#end
 
 		var pisspoop:Array<Array<String>> = [ //Name - Icon name - Description - Link - BG Color
-			['Mobile Port'],
-			['HomuHomu833',                'homura',            'Everything on JS Engine Mobile',               'https://www.youtube.com/@HomuHomu833',          'FFE7C0'],
-			[''],
 			['JS Engine People'],
 			['Jordan Santiago',			'jor',				'Coded everything into JS Engine',								'https://twitter.com/JordansTweetsYT',			'FF9300'],
 			['Stinko',			'stinkern',				'Coder, a very stupid one..',								'https://stinkernn.carrd.co/',			'555555'],
-			['MoxieCoder',			'moxie',				'Coder',								'https://github.com/moxie-coder',			'000055'],
+			['Moxie-Coder',			'moxie',				'Coder',								'https://github.com/moxie-coder',			'33B3BB'],
 			[''],
 			['Special Thanks'],
 			['Denpa Engine',			'denpeak',				'The crossfade code used for this engine\n(Currently not implemented yet!)',								'https://github.com/UmbratheUmbreon/PublicDenpaEngine',			'FF9300'],
@@ -127,11 +86,11 @@ class CreditsState extends MusicBeatState
 			['evilsk8r',			'evilsk8r',			"Artist of Friday Night Funkin'",								'https://twitter.com/evilsk8r',			'5ABD4B'],
 			['kawaisprite',			'kawaisprite',		"Composer of Friday Night Funkin'",								'https://twitter.com/kawaisprite',		'378FC7']
 		];
-		
+
 		for(i in pisspoop){
 			creditsStuff.push(i);
 		}
-	
+
 		for (i in 0...creditsStuff.length)
 		{
 			var isSelectable:Bool = !unselectableCheck(i);
@@ -145,23 +104,23 @@ class CreditsState extends MusicBeatState
 			if(isSelectable) {
 				if(creditsStuff[i][5] != null)
 				{
-					Paths.currentModDirectory = creditsStuff[i][5];
+					Mods.currentModDirectory = creditsStuff[i][5];
 				}
 
 				var icon:AttachedSprite = new AttachedSprite('credits/' + creditsStuff[i][1]);
 				icon.xAdd = optionText.width + 10;
 				icon.sprTracker = optionText;
-	
+
 				// using a FlxGroup is too much fuss!
 				iconArray.push(icon);
 				add(icon);
-				Paths.currentModDirectory = '';
+				Mods.currentModDirectory = '';
 
 				if(curSelected == -1) curSelected = i;
 			}
 			else optionText.alignment = CENTERED;
 		}
-		
+
 		descBox = new AttachedSprite();
 		descBox.makeGraphic(1, 1, FlxColor.BLACK);
 		descBox.xAdd = -10;
@@ -171,17 +130,14 @@ class CreditsState extends MusicBeatState
 		add(descBox);
 
 		descText = new FlxText(50, FlxG.height + offsetThing - 25, 1180, "", 32);
-		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER/*, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK*/);
+		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER);
 		descText.scrollFactor.set();
-		//descText.borderSize = 2.4;
 		descBox.sprTracker = descText;
 		add(descText);
 
 		bg.color = getCurrentBGColor();
 		intendedColor = bg.color;
 		changeSelection();
-
-		addVirtualPad(UP_DOWN, A_B);
 
 		super.create();
 	}
@@ -242,7 +198,7 @@ class CreditsState extends MusicBeatState
 				quitting = true;
 			}
 		}
-		
+
 		for (item in grpOptions.members)
 		{
 			if(!item.bold)
@@ -314,11 +270,8 @@ class CreditsState extends MusicBeatState
 	}
 
 	#if MODS_ALLOWED
-	private var modsAdded:Array<String> = [];
 	function pushModCreditsToList(folder:String)
 	{
-		if(modsAdded.contains(folder)) return;
-
 		var creditsFile:String = null;
 		if(folder != null && folder.trim().length > 0) creditsFile = Paths.mods(folder + '/data/credits.txt');
 		else creditsFile = Paths.mods('data/credits.txt');
@@ -334,7 +287,6 @@ class CreditsState extends MusicBeatState
 			}
 			creditsStuff.push(['']);
 		}
-		modsAdded.push(folder);
 	}
 	#end
 

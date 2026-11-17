@@ -1,26 +1,11 @@
-import flixel.FlxG;
-import flixel.FlxSprite;
 import flixel.FlxCamera;
-import flixel.tweens.FlxTween;
-import flixel.group.FlxSpriteGroup;
-import flixel.util.FlxColor;
-import flixel.text.FlxText;
-
-#if MODS_ALLOWED
-import sys.io.File;
-import sys.FileSystem;
-#end
 
 #if ACHIEVEMENTS_ALLOWED
-import objects.AchievementPopup;
 import haxe.Exception;
-import haxe.Json;
-
+import objects.AchievementPopup;
 #if LUA_ALLOWED
-import FunkinLua;
+import psychlua.FunkinLua.State;
 #end
-
-using StringTools;
 
 typedef Achievement =
 {
@@ -32,7 +17,7 @@ typedef Achievement =
 
 	//handled automatically, ignore these two
 	@:optional var mod:String;
-	@:optional var ID:Int; 
+	@:optional var ID:Int;
 }
 
 class Achievements {
@@ -55,7 +40,7 @@ class Achievements {
 		createAchievement('two_keys',				{name: "Just the Two of Us", description: "Finish a Song pressing only two keys."});
 		createAchievement('toastier',				{name: "Toaster Gamer", description: "Have you tried to run the game on a toaster?"});
 		createAchievement('debugger',				{name: "Debugger", description: "Beat the \"Test\" Stage from the Chart Editor.", hidden: true});
-		
+
 		//dont delete this thing below
 		_originalLength = _sortID + 1;
 	}
@@ -139,7 +124,7 @@ class Achievements {
 		}
 		return -1;
 	}
-	
+
 	static var _lastUnlock:Int = -999;
 	public static function unlock(name:String, autoStartPopup:Bool = true):String {
 		if(!achievements.exists(name))
@@ -212,15 +197,15 @@ class Achievements {
 
 		_sortID = _originalLength-1;
 
-		var modLoaded:String = Paths.currentModDirectory;
-		Paths.currentModDirectory = null;
+		var modLoaded:String = Mods.currentModDirectory;
+		Mods.currentModDirectory = null;
 		loadAchievementJson(Paths.mods('data/achievements.json'));
-		for (i => mod in Paths.getModDirectories())
+		for (i => mod in Mods.getModDirectories())
 		{
-			Paths.currentModDirectory = mod;
+			Mods.currentModDirectory = mod;
 			loadAchievementJson(Paths.mods('$mod/data/achievements.json'));
 		}
-		Paths.currentModDirectory = modLoaded;
+		Mods.currentModDirectory = modLoaded;
 	}
 
 	inline static function loadAchievementJson(path:String, addMods:Bool = true)
@@ -230,7 +215,7 @@ class Achievements {
 			try {
 				var rawJson:String = File.getContent(path).trim();
 				if(rawJson != null && rawJson.length > 0) retVal = Json.parse(rawJson); //Json.parse('{"achievements": $rawJson}').achievements;
-				
+
 				if(addMods && retVal != null)
 				{
 					for (i in 0...retVal.length)
@@ -238,7 +223,7 @@ class Achievements {
 						var achieve:Dynamic = retVal[i];
 						if(achieve == null)
 						{
-							var errorTitle = 'Mod name: ' + Paths.currentModDirectory != null ? Paths.currentModDirectory : "None";
+							var errorTitle = 'Mod name: ' + Mods.currentModDirectory != null ? Mods.currentModDirectory : "None";
 							var errorMsg = 'Achievement #${i+1} is invalid.';
 							#if windows
 							lime.app.Application.current.window.alert(errorMsg, errorTitle);
@@ -261,11 +246,11 @@ class Achievements {
 						key = key.trim();
 						if(achievements.exists(key)) continue;
 
-						createAchievement(key, achieve, Paths.currentModDirectory);
+						createAchievement(key, achieve, Mods.currentModDirectory);
 					}
 				}
 			} catch(e:Dynamic) {
-				var errorTitle = 'Mod name: ' + Paths.currentModDirectory != null ? Paths.currentModDirectory : "None";
+				var errorTitle = 'Mod name: ' + Mods.currentModDirectory != null ? Mods.currentModDirectory : "None";
 				var errorMsg = 'Error loading achievements.json: $e';
 				#if windows
 				lime.app.Application.current.window.alert(errorMsg, errorTitle);
@@ -279,52 +264,52 @@ class Achievements {
 	#if LUA_ALLOWED
 	public static function addLuaCallbacks(lua:State)
 	{
-		Lua_helper.add_callback(lua, "getAchievementScore", function(name:String):Float
+		Convert.addCallback(lua, "getAchievementScore", function(name:String):Float
 		{
 			if(!achievements.exists(name))
 			{
-				FunkinLua.luaTrace('getAchievementScore: Couldnt find achievement: $name', false, false, FlxColor.RED);
+				LuaUtils.luaTrace(lua, 'getAchievementScore: Couldnt find achievement: $name', false, false, FlxColor.RED);
 				return -1;
 			}
 			return getScore(name);
 		});
-		Lua_helper.add_callback(lua, "setAchievementScore", function(name:String, ?value:Float = 1, ?saveIfNotUnlocked:Bool = true):Float
+		Convert.addCallback(lua, "setAchievementScore", function(name:String, ?value:Float = 1, ?saveIfNotUnlocked:Bool = true):Float
 		{
 			if(!achievements.exists(name))
 			{
-				FunkinLua.luaTrace('setAchievementScore: Couldnt find achievement: $name', false, false, FlxColor.RED);
+				LuaUtils.luaTrace(lua, 'setAchievementScore: Couldnt find achievement: $name', false, false, FlxColor.RED);
 				return -1;
 			}
 			return setScore(name, value, saveIfNotUnlocked);
 		});
-		Lua_helper.add_callback(lua, "addAchievementScore", function(name:String, ?value:Float = 1, ?saveIfNotUnlocked:Bool = true):Float
+		Convert.addCallback(lua, "addAchievementScore", function(name:String, ?value:Float = 1, ?saveIfNotUnlocked:Bool = true):Float
 		{
 			if(!achievements.exists(name))
 			{
-				FunkinLua.luaTrace('addAchievementScore: Couldnt find achievement: $name', false, false, FlxColor.RED);
+				LuaUtils.luaTrace(lua, 'addAchievementScore: Couldnt find achievement: $name', false, false, FlxColor.RED);
 				return -1;
 			}
 			return addScore(name, value, saveIfNotUnlocked);
 		});
-		Lua_helper.add_callback(lua, "unlockAchievement", function(name:String):Dynamic
+		Convert.addCallback(lua, "unlockAchievement", function(name:String):Dynamic
 		{
 			if(!achievements.exists(name))
 			{
-				FunkinLua.luaTrace('unlockAchievement: Couldnt find achievement: $name', false, false, FlxColor.RED);
+				LuaUtils.luaTrace(lua, 'unlockAchievement: Couldnt find achievement: $name', false, false, FlxColor.RED);
 				return null;
 			}
 			return unlock(name);
 		});
-		Lua_helper.add_callback(lua, "isAchievementUnlocked", function(name:String):Dynamic
+		Convert.addCallback(lua, "isAchievementUnlocked", function(name:String):Dynamic
 		{
 			if(!achievements.exists(name))
 			{
-				FunkinLua.luaTrace('isAchievementUnlocked: Couldnt find achievement: $name', false, false, FlxColor.RED);
+				LuaUtils.luaTrace(lua, 'isAchievementUnlocked: Couldnt find achievement: $name', false, false, FlxColor.RED);
 				return null;
 			}
 			return isUnlocked(name);
 		});
-		Lua_helper.add_callback(lua, "achievementExists", function(name:String) return achievements.exists(name));
+		Convert.addCallback(lua, "achievementExists", function(name:String) return achievements.exists(name));
 	}
 	#end
 	#end

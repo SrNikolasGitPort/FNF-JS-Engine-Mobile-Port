@@ -84,8 +84,6 @@ body:
     attributes:
       label: "What is your build target?"
       options:
-        - "Android"
-        - "iOS"
         - "Windows x64"
         - "Windows x86/x32"
         - "Linux"

@@ -1,16 +1,8 @@
 package;
 
 import Section.SwagSection;
-import haxe.Json;
 import haxe.format.JsonParser;
-import lime.utils.Assets;
 
-#if sys
-import sys.io.File;
-import sys.FileSystem;
-#end
-
-using StringTools;
 
 typedef SwagSong =
 {
@@ -67,14 +59,10 @@ class Song
 	public var player2:String = 'dad';
 	public var gfVersion:String = 'gf';
 
+	public static var psychV1Chart:Bool = false;
+
 	private static function onLoadJson(songJson:Dynamic) // Convert old charts to newest format
 	{
-		if(songJson.gfVersion == null)
-		{
-			songJson.gfVersion = songJson.player3;
-			songJson.player3 = null;
-		}
-
 		if(songJson.events == null)
 		{
 			songJson.events = [];
@@ -98,6 +86,45 @@ class Song
 				}
 			}
 		}
+		
+		//processes the chart if it's made in psych 1.0
+		if (psychV1Chart) {
+			var curBPM:Float = Conductor.bpm;
+			var susDiff = 7500 / curBPM;
+			var sectionsData:Array<SwagSection> = songJson.notes;
+			if(sectionsData == null) return;
+
+			for (section in sectionsData)
+			{
+				if (section.changeBPM) {
+					curBPM = section.bpm;
+					susDiff = 7500 / curBPM;
+				}
+				var beats:Null<Float> = cast section.sectionBeats;
+				if (beats == null || Math.isNaN(beats))
+				{
+					section.sectionBeats = 4;
+					if(Reflect.hasField(section, 'lengthInSteps')) Reflect.deleteField(section, 'lengthInSteps');
+				}
+
+				for (note in section.sectionNotes)
+				{
+					var gottaHitNote:Bool = (note[1] < 4) ? section.mustHitSection : !section.mustHitSection;
+					note[1] = (note[1] % 4) + (gottaHitNote ? 0 : 4);
+
+					//i'll figure out this part later but its because Psych 1.0 is weird with sustain lengths
+					if (note[2] > 0) {
+						note[2] -= susDiff;
+						note[2] = Math.fround(note[2] / susDiff) * susDiff;
+						note[2] = Math.max(note[2], 0);
+					}
+
+					if(!Std.isOfType(note[3], String)) note[3] = editors.ChartingState.noteTypeList[note[3]]; //Backward compatibility + compatibility with Week 7 charts
+
+					if(Std.isOfType(note[3], Bool)) note[3] = (note[3] || section.altAnim ? 'Alt Animation' : ''); //Compatibility with charts made by SNIFF
+				}
+			}
+		}
 	}
 
 	public static function hasDifficulty(songName:String, difficulty:String):Bool
@@ -112,10 +139,13 @@ class Song
 
 		return false;
 	}
-
+	public static var loadedSongName:String;
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
+		if(folder == null) folder = jsonInput;
 		var rawJson:String = null;
+		
+		loadedSongName = folder;
 
 		var formattedFolder:String = Paths.formatToSongPath(folder);
 		var formattedSong:String = Paths.formatToSongPath(jsonInput);
@@ -136,13 +166,21 @@ class Song
 				rawJson = Assets.getText(path);
 		}
 
-		var songJson:Dynamic = parseJSONshit(rawJson);
+		var songJson:Dynamic = parseJSON(rawJson);
 		if(jsonInput != 'events') StageData.loadDirectory(songJson);
 		onLoadJson(songJson);
 		return songJson;
 	}
 
-	public static function parseJSONshit(rawJson:String):SwagSong {
-		return cast Json.parse(rawJson).song;
+	
+	public static function parseJSON(rawJson:String):Dynamic {
+		var songJson = cast Json.parse(rawJson);
+		psychV1Chart = Reflect.hasField(songJson, 'format');
+		if (psychV1Chart) {
+			psychV1Chart = true;
+			Reflect.deleteField(songJson, 'format');
+			return songJson;
+		}
+		else return songJson.song;
 	}
 }

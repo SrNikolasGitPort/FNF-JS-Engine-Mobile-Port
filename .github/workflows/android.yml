@@ -1,0 +1,244 @@
+name: Android Build
+
+# Builds the "FNF JS Engine Mobile Port" APK.
+# One APK that contains BOTH 32-bit (armeabi-v7a) and 64-bit (arm64-v8a) code,
+# so the same file installs and runs on old and new phones.
+#
+# Run it by hand from the Actions tab ("Run workflow"). Leave "publish" ticked to also
+# create the GitHub Release (the APK is the only file attached to it).
+
+on:
+  # every push to main builds the APK and attaches it to the "MobilePort" release
+  push:
+    branches:
+      - main
+      - mobile
+    tags:
+      - "v*-mobile"
+      - "MobilePort"
+  # pushing a tag named MobilePort (or v1.0.0-mobile) builds the APK and publishes the release automatically
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag (e.g. v1.0.0-mobile)"
+        required: true
+        default: "v1.0.0-mobile"
+      publish:
+        description: "Publish a GitHub Release with the APK"
+        required: true
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark the release as a pre-release"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_NAME: FNF JS Engine Mobile Port
+  APK_NAME: JS-Android.apk
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # The runner's default NDK (r30) is too new for this old Lime fork (OpenAL fails to compile),
+      # so pin NDK r27, which is what the toolchain was made for.
+      - name: Install Android NDK r27
+        id: ndk
+        run: |
+          NDK_VER=27.2.12479018
+          if [ ! -d "$ANDROID_HOME/ndk/$NDK_VER" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VER" > /dev/null
+          fi
+          ls "$ANDROID_HOME/ndk"
+          echo "ndk-path=$ANDROID_HOME/ndk/$NDK_VER" >> "$GITHUB_OUTPUT"
+
+      - name: Restore native build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .haxelib/
+            build/release/android/obj/
+          key: cache-android-build-${{ github.sha }}
+          restore-keys: cache-android-build-
+
+      - name: Install Haxe libraries
+        run: |
+          haxelib setup ~/haxelib
+          haxelib install hxcpp > /dev/null --quiet
+          haxelib install hxpkg --quiet
+          haxelib run hxpkg install --force
+
+      - name: Compile hxcpp tools
+        run: |
+          cd .haxelib/hxcpp/git/tools/run
+          haxe compile.hxml
+          cd ..
+          cd ./hxcpp
+          haxe compile.hxml
+          cd ../../../../..
+
+      # 32-bit fix: with armv7 the code uses emulated thread-locals, which need __emutls_get_address. The linker resolved it
+      # against the libc stub, but many 32-bit phones do not export it, so the app died at start with
+      # "dlopen failed: cannot locate symbol __emutls_get_address". Link the static copy from compiler-rt instead.
+      - name: Link emutls statically for armv7
+        run: |
+          RT=$(find "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt" -name 'libclang_rt.builtins-arm-android.a' | head -n 1)
+          echo "compiler-rt: $RT"
+          test -n "$RT"
+          TC=.haxelib/hxcpp/git/toolchain/android-toolchain-clang.xml
+          python3 - "$TC" "$RT" <<'PY'
+          import sys
+          p, rt = sys.argv[1], sys.argv[2]
+          s = open(p).read()
+          marker = '<flag value ="-shared" />'
+          assert marker in s, "dll linker not found"
+          add = marker + '\n  <section if="HXCPP_ARMV7">\n    <flag value="-Wl,-u,__emutls_get_address" />\n    <flag value="' + rt + '" />\n  </section>'
+          if '__emutls_get_address' not in s:
+              s = s.replace(marker, add, 1)
+          open(p, 'w').write(s)
+          PY
+          grep -n "emutls" -B2 -A3 "$TC"
+          # cached 32-bit libraries were linked the old way: drop them so they are linked again from the cached objects
+          find .haxelib/lime/git/ndll/Android build/release/android -name '*-v7.so' -print -delete 2>/dev/null || true
+
+      - name: Configure Lime for Android
+        run: |
+          haxelib run lime config ANDROID_SDK "$ANDROID_HOME"
+          haxelib run lime config ANDROID_NDK_ROOT "${{ steps.ndk.outputs.ndk-path }}"
+          haxelib run lime config JAVA_HOME "$JAVA_HOME"
+          haxelib run lime config ANDROID_SETUP true
+
+      # This Lime fork does not ship prebuilt Android native libraries (liblime-*.so), so build them here.
+      - name: Rebuild Lime native libraries (armv7 + arm64)
+        timeout-minutes: 60
+        run: |
+          haxelib run lime rebuild android -armv7 -arm64 -release
+          ls -la .haxelib/lime/git/ndll/Android/
+
+      # The APK must be signed or Android refuses to install it.
+      # Add the repository secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS to keep the SAME
+      # signature between releases (needed to update an installed app). Without them a new key is made for this build.
+      - name: Prepare signing key
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/sign"
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/sign/release.jks"
+            echo "ALIAS=${KS_ALIAS:-jsengine}" >> $GITHUB_ENV
+            echo "PASS=$KS_PASS" >> $GITHUB_ENV
+          else
+            keytool -genkeypair -v -keystore "$RUNNER_TEMP/sign/release.jks" -alias jsengine \
+              -keyalg RSA -keysize 2048 -validity 10000 -storepass jsengine-mobile -keypass jsengine-mobile \
+              -dname "CN=JS Engine Mobile Port"
+            echo "ALIAS=jsengine" >> $GITHUB_ENV
+            echo "PASS=jsengine-mobile" >> $GITHUB_ENV
+          fi
+          echo "KEYSTORE=$RUNNER_TEMP/sign/release.jks" >> $GITHUB_ENV
+
+      - name: Build APK (armv7 + arm64)
+        timeout-minutes: 150
+        run: |
+          rm -f assets/preload/gameRenders/renderlol.bat
+          # hxcpp can hang forever after a C++ compile error, so watch the log and stop at the first one
+          set +e
+          haxelib run lime build android -armv7 -arm64 -release -D GITHUB_BUILD \
+            --certificate-path="$KEYSTORE" --certificate-password="$PASS" \
+            --certificate-alias="$ALIAS" --certificate-alias-password="$PASS" > build.log 2>&1 &
+          BUILD_PID=$!
+          while kill -0 $BUILD_PID 2>/dev/null; do
+            if grep -qE "error: |Error:" build.log; then
+              sleep 20  # let the compiler print the rest of the message
+              pkill -P $BUILD_PID 2>/dev/null; pkill -f "haxelib run lime build" 2>/dev/null
+              pkill -f hxcpp 2>/dev/null; pkill -f clang 2>/dev/null; pkill -f neko 2>/dev/null
+              echo "::error::C++ compile error detected, stopping the build"
+              echo "===== ERRORS ====="
+              grep -nE -B2 -A12 "error: |Error:" build.log | cut -c1-300 | head -150
+              exit 1
+            fi
+            sleep 10
+          done
+          wait $BUILD_PID
+          STATUS=$?
+          if [ $STATUS -ne 0 ]; then echo "===== LAST LINES ====="; tail -n 80 build.log | cut -c1-300; fi
+          exit $STATUS
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+
+      - name: Find the APK
+        run: |
+          APK=$(find build/release/android -name "*.apk" -path "*release*" | head -n 1)
+          if [ -z "$APK" ]; then echo "No APK was produced"; find build/release/android -name "*.apk"; exit 1; fi
+          mkdir -p out
+          cp "$APK" "out/$APK_NAME"
+          ls -lh out
+          # both ABIs must be inside, otherwise 32-bit phones cannot run it
+          for abi in armeabi-v7a arm64-v8a; do
+            unzip -l "out/$APK_NAME" | grep -q "lib/$abi/libApplicationMain.so" || { echo "missing $abi"; exit 1; }
+          done
+
+      - name: Save native build cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            .haxelib/
+            build/release/android/obj/
+          key: cache-android-build-${{ github.sha }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: out/${{ env.APK_NAME }}
+
+      - name: Move the MobilePort tag to this commit (so "Source code" in the release matches the APK)
+        if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main' }}
+        run: |
+          git tag -f MobilePort "$GITHUB_SHA"
+          git push -f origin refs/tags/MobilePort
+
+      - name: Publish release (APK only)
+        if: ${{ (github.event_name != 'workflow_dispatch' || inputs.publish) && (github.ref_type == 'tag' || github.ref_name == 'main' || github.event_name == 'workflow_dispatch') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || (github.event_name == 'workflow_dispatch' && inputs.tag_name || 'MobilePort') }}
+          name: ${{ env.RELEASE_NAME }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          files: out/${{ env.APK_NAME }}
+          body: |
+            **FNF JS Engine Mobile Port** (Android)
+
+            - One APK for every phone: 32-bit (armeabi-v7a) and 64-bit (arm64-v8a). Android 6.0+.
+            - First launch copies the game files out of the APK (about a minute), after that it opens fast.
+            - Put your mods in `Android/data/com.JordanSantiago.JSEngine/files/mods/`.

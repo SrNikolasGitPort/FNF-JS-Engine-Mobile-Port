@@ -1,14 +1,5 @@
-1.48.1;
+1.51.1;
 
-Additions:
-- Changed "Load Autosave" to "Load Backup From File" which allows you to load not only autosaves, but chart files individually.
-- Introduced TJSON support, currently for week JSONs, with potential for broader use. This is to assist those unfamiliar with JSON format.
+- Fixed a bug where going to the Controls menu would crash the engine.
 
-Removals:
-- Neo has been removed due to drama.
-
-Fixes:
-- Addressed an issue where notes were not despawning as expected, which should also improve input handling. (Hopefully)
-- Fixed issues with broken health icon sizes. (I hope)
-- Added support for icon metadata.
-- Implemented animated health icons for enhanced visual feedback.
+- The changelog is too long, go look at GitHub for all the changes.

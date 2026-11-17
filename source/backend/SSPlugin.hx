@@ -1,28 +1,20 @@
 // This is modified version of https://github.com/zacksgamerz/flixel-screenshot-plugin/blob/master/src/screenshotplugin/ScreenShotPlugin.hx
 package backend;
 
-import flixel.util.FlxTimer;
-#if sys
-import sys.FileSystem;
-#end
+import flixel.input.keyboard.FlxKey;
+import lime.utils.Log as LimeLogger;
+import openfl.display.Bitmap;
+import openfl.display.BitmapData;
+import openfl.display.Sprite;
+import openfl.utils.ByteArray;
+
 #if android
 import android.widget.Toast;
 #end
-import openfl.utils.ByteArray;
-import openfl.display.Sprite;
-import flixel.tweens.FlxTween;
-import flixel.FlxG;
-import openfl.display.Bitmap;
-import openfl.display.BitmapData;
-import flixel.input.keyboard.FlxKey;
-import lime.utils.Log as LimeLogger;
-
-using StringTools;
 
 /**
  * @author SayofTheLor
  * @author zacksgamerz
- * @author HomuHomu833
  */
 class SSPlugin extends flixel.FlxBasic
 {
@@ -103,13 +95,16 @@ class SSPlugin extends flixel.FlxBasic
 
 		current = this;
 		daContainer = new Sprite();
+		daContainer.mouseEnabled = false;
 		FlxG.stage.addChild(daContainer);
 		flashSprite = new Sprite();
 		flashSprite.alpha = 0;
+		flashSprite.mouseEnabled = false;
 		flashBitmap = new Bitmap(new BitmapData(FlxG.width, FlxG.height, true, 0xFFFFFFFF));
 		flashSprite.addChild(flashBitmap);
 		screenshotSprite = new Sprite();
 		screenshotSprite.alpha = 0;
+		screenshotSprite.mouseEnabled = false;
 		daContainer.addChild(screenshotSprite);
 		outlineBitmap = new Bitmap(new BitmapData(Std.int(FlxG.width / 5) + 10, Std.int(FlxG.height / 5) + 10, true, 0xffffffff));
 		outlineBitmap.x = 5;
@@ -136,7 +131,7 @@ class SSPlugin extends flixel.FlxBasic
 
 		if (flashSprite.alpha > 0 || screenshotSprite.alpha > 0) aliveTime += elapsed;
 		else aliveTime = 0;
-		if (aliveTime >= buggedKillTime) 
+		if (aliveTime >= buggedKillTime)
 		{
 			FlxTween.cancelTweensOf(flashSprite);
 			FlxTween.cancelTweensOf(screenshotSprite);

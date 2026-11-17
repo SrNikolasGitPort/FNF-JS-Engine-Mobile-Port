@@ -1,17 +1,9 @@
 package;
 
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.graphics.frames.FlxAtlasFrames;
-import flixel.graphics.frames.FlxFrame.FlxFrameAngle;
-import flixel.math.FlxMath;
-import flixel.util.FlxColor;
 import backend.FlxFixedShader;
-import flixel.FlxCamera;
-import shaders.RGBPalette;
+import flixel.graphics.frames.FlxFrame.FlxFrameAngle;
 import shaders.RGBPalette.RGBShaderReference;
-
-using StringTools;
+import shaders.RGBPalette;
 
 typedef NoteSplashConfig = {
 	anim:String,
@@ -38,16 +30,11 @@ class NoteSplash extends FlxSprite
 		rgbShader = new PixelSplashShaderRef();
 		shader = rgbShader.shader;
 
-		if (!Paths.splashConfigs.exists(texture)) config = Paths.initSplashConfig(texture); 
+		if (!Paths.splashConfigs.exists(texture)) config = Paths.initSplashConfig(texture);
 		config = Paths.splashConfigs.get(texture);
 
 		setupNoteSplash(x, y, note);
 		antialiasing = ClientPrefs.globalAntialiasing;
-	}
-
-	override function destroy()
-	{
-		super.destroy();
 	}
 
 	var maxAnims:Int = 2;
@@ -58,7 +45,7 @@ class NoteSplash extends FlxSprite
 		shader = (ClientPrefs.enableColorShader ? rgbShader.shader : null);
 
 		if(note != null && note.noteSplashData.texture.length > 0 && Paths.fileExists('images/' + note.noteSplashData.texture + '.png', IMAGE)) texture = note.noteSplashData.texture;
-		
+
 		if(textureLoaded != texture) {
 			loadAnims(texture);
 		}
@@ -169,7 +156,7 @@ class PixelSplashShader extends FlxFixedShader
 {
 	@:glFragmentHeader('
 		#pragma header
-		
+
 		uniform vec3 r;
 		uniform vec3 g;
 		uniform vec3 b;
@@ -190,9 +177,9 @@ class PixelSplashShader extends FlxFixedShader
 			vec4 newColor = color;
 			newColor.rgb = min(color.r * r + color.g * g + color.b * b, vec3(1.0));
 			newColor.a = color.a;
-			
+
 			color = mix(color, newColor, mult);
-			
+
 			if(color.a > 0.0) {
 				return vec4(color.rgb, color.a);
 			}

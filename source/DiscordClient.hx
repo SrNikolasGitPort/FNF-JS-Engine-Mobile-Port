@@ -6,14 +6,15 @@ import cpp.ConstCharStar;
 import cpp.Function;
 import cpp.RawConstPointer;
 #end
-
-import sys.thread.Thread;
-import lime.app.Application;
+#if LUA_ALLOWED
+import psychlua.FunkinLua.State;
+#end
 
 import hxdiscord_rpc.Discord;
 import hxdiscord_rpc.Types;
+import lime.app.Application;
+import sys.thread.Thread;
 
-import flixel.util.FlxStringUtil;
 
 class DiscordClient
 {
@@ -29,7 +30,7 @@ class DiscordClient
 		if(ClientPrefs.discordRPC) initialize();
 		else if(isInitialized) shutdown();
 	}
-	
+
 	public static function prepare()
 	{
 		if (!isInitialized && ClientPrefs.discordRPC)
@@ -45,7 +46,7 @@ class DiscordClient
 		isInitialized = false;
 		Discord.Shutdown();
 	}
-	
+
 	private static function onReady(request:RawConstPointer<DiscordUser>):Void
 	{
 		final user = cast (request[0].username, String);
@@ -129,7 +130,7 @@ class DiscordClient
 	{
 		Discord.UpdatePresence(RawConstPointer.addressOf(presence));
 	}
-	
+
 	inline public static function resetClientID()
 	{
 		clientID = _defaultID;
@@ -152,8 +153,8 @@ class DiscordClient
 	#if LUA_ALLOWED
 	public static function addLuaCallbacks(lua:State)
 	{
-		Lua_helper.add_callback(lua, "changeDiscordPresence", changePresence);
-		Lua_helper.add_callback(lua, "changeDiscordClientID", function(?newID:String) {
+		Convert.addCallback(lua, "changeDiscordPresence", changePresence);
+		Convert.addCallback(lua, "changeDiscordClientID", function(?newID:String) {
 			if(newID == null) newID = _defaultID;
 			clientID = newID;
 		});

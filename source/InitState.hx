@@ -1,7 +1,5 @@
 package;
 
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.FlxG;
 import flixel.FlxState;
 
 /**
@@ -13,7 +11,7 @@ class InitState extends FlxState {
 
         // -- FLIXEL STUFF -- //
 
-        FlxG.game.focusLostFramerate = 60;
+        FlxG.game.focusLostFramerate = #if mobile 10 #else 60 #end; // in the background a phone should idle
 		FlxG.sound.muteKeys = TitleState.muteKeys;
 		FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
 		FlxG.sound.volumeUpKeys = TitleState.volumeUpKeys;
@@ -35,6 +33,9 @@ class InitState extends FlxState {
 
         // ClientPrefs.loadDefaultKeys();
 		ClientPrefs.loadPrefs();
+		#if mobile
+		mobile.MobileControls.applyScaleMode();
+		#end
 
         /*
         #if ACHIEVEMNTS_ALLOWED
@@ -44,11 +45,11 @@ class InitState extends FlxState {
 
         // -- MODS -- //
 
-		#if LUA_ALLOWED
-		Paths.pushGlobalMods();
+		#if MODS_ALLOWED
+		Mods.pushGlobalMods();
 		#end
 		// Just to load a mod on start up if ya got one. For mods that change the menu music and bg
-		WeekData.loadTheFirstEnabledMod();
+		Mods.loadTopMod();
 
         // -- -- -- //
 

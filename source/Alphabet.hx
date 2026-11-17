@@ -1,17 +1,5 @@
 package;
 
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.graphics.frames.FlxAtlasFrames;
-import flixel.group.FlxSpriteGroup;
-import flixel.math.FlxMath;
-import flixel.math.FlxPoint;
-import flixel.util.FlxTimer;
-import flixel.sound.FlxSound;
-import flash.media.Sound;
-
-using StringTools;
-
 enum Alignment
 {
 	LEFT;
@@ -83,7 +71,7 @@ class Alphabet extends FlxSpriteGroup
 				default:
 					newOffset = 0;
 			}
-	
+
 			letter.offset.x -= letter.alignOffset;
 			letter.alignOffset = newOffset * scale.x;
 			letter.offset.x += letter.alignOffset;
@@ -206,7 +194,7 @@ class Alphabet extends FlxSpriteGroup
 		rows = 0;
 		for (character in newText.split(''))
 		{
-			
+
 			if(character != '\n')
 			{
 				var spaceChar:Bool = (character == " " || (bold && character == "_"));
@@ -286,6 +274,8 @@ class AlphaCharacter extends FlxSprite
 
 	public var image(default, set):String;
 
+	public static var cachedFrames:Map<String, FlxAtlasFrames> = new Map();
+
 	public static var allLetters:Map<String, Null<Letter>> = [
 		//alphabet
 		'a'  => null, 'b'  => null, 'c'  => null, 'd'  => null, 'e'  => null, 'f'  => null,
@@ -302,7 +292,7 @@ class AlphaCharacter extends FlxSprite
 		'ä'  => null, 'ö'  => null, 'å'  => null, 'ø'  => null, 'æ'  => null,
 		'ñ'  => null, 'ç'  => {offsetsBold: [0, -11]}, 'š'  => null, 'ž'  => null, 'ý'  => null, 'ÿ'  => null,
 		'ß'  => null,
-		
+
 		//numbers
 		'0'  => null, '1'  => null, '2'  => null, '3'  => null, '4'  => null,
 		'5'  => null, '6'  => null, '7'  => null, '8'  => null, '9'  => null,
@@ -360,7 +350,7 @@ class AlphaCharacter extends FlxSprite
 		image = 'alphabet';
 		antialiasing = ClientPrefs.globalAntialiasing;
 	}
-	
+
 	public var curLetter:Letter = null;
 	public function setupAlphaCharacter(x:Float, y:Float, ?character:String = null, ?bold:Null<Bool> = null)
 	{
@@ -374,7 +364,7 @@ class AlphaCharacter extends FlxSprite
 			this.scale.x = parent.scaleX;
 			this.scale.y = parent.scaleY;
 		}
-		
+
 		if(character != null)
 		{
 			this.character = character;
@@ -401,13 +391,13 @@ class AlphaCharacter extends FlxSprite
 			if(curLetter != null && curLetter.anim != null) alphaAnim = curLetter.anim;
 
 			var anim:String = alphaAnim + suffix;
-			animation.addByPrefix(anim, anim, 24);
+			if (animation.getByName(anim) == null) animation.addByPrefix(anim, anim, 24);
 			animation.play(anim, true);
 			if(animation.curAnim == null)
 			{
 				if(suffix != ' bold') suffix = ' normal';
 				anim = 'question' + suffix;
-				animation.addByPrefix(anim, anim, 24);
+				if (animation.getByName(anim) == null) animation.addByPrefix(anim, anim, 24);
 				animation.play(anim, true);
 			}
 		}
@@ -424,12 +414,25 @@ class AlphaCharacter extends FlxSprite
 			|| (ascii >= 248 && ascii <= 255);
 	}
 
+	private static function getCachedFrames(name:String):FlxAtlasFrames
+	{
+		if (cachedFrames.exists(name))
+		{
+			var cached:FlxAtlasFrames = cachedFrames.get(name);
+			if (cached != null && cached.parent != null && cached.parent == Paths.image(name))
+				return cached;
+		}
+		var atlas:FlxAtlasFrames = Paths.getSparrowAtlas(name);
+		cachedFrames.set(name, atlas);
+		return atlas;
+	}
+
 	private function set_image(name:String)
 	{
 		if(frames == null) //first setup
 		{
 			image = name;
-			frames = Paths.getSparrowAtlas(name);
+			frames = getCachedFrames(name);
 			return name;
 		}
 
@@ -439,16 +442,16 @@ class AlphaCharacter extends FlxSprite
 			lastAnim = animation.name;
 		}
 		image = name;
-		frames = Paths.getSparrowAtlas(name);
+		frames = getCachedFrames(name);
 		this.scale.x = parent.scaleX;
 		this.scale.y = parent.scaleY;
 		alignOffset = 0;
-		
+
 		if (lastAnim != null)
 		{
-			animation.addByPrefix(lastAnim, lastAnim, 24);
+			if (animation.getByName(lastAnim) == null) animation.addByPrefix(lastAnim, lastAnim, 24);
 			animation.play(lastAnim, true);
-			
+
 			updateHitbox();
 		}
 		return name;
