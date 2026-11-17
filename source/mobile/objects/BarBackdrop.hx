@@ -8,9 +8,10 @@ import flixel.util.FlxColor;
 import mobile.FullScreenScaleMode;
 
 /**
- * Full Screen: fills the area next to a menu with a darkened, enlarged copy of the menu's own background,
+ * Full Screen: fills the area next to a menu with an enlarged copy (same colors, no dark edge) of the menu's own background,
  * so there are no black bars while every menu element stays exactly where it is in Ratio mode.
  */
+@:access(flixel.FlxBasic)
 class BarBackdrop extends FlxSprite
 {
 	var source:FlxSprite;
@@ -33,7 +34,7 @@ class BarBackdrop extends FlxSprite
 		if (source == null || !source.exists)
 			return;
 		frame = source.frame;
-		color = FlxColor.interpolate(source.color, FlxColor.BLACK, 0.45);
+		color = source.color;
 		alpha = source.alpha;
 		super.draw();
 	}
@@ -134,15 +135,15 @@ class BarBackdrop extends FlxSprite
 			if (Std.isOfType(member, FlxGroup))
 			{
 				final g:FlxGroup = cast member;
-				final own = g.cameras != null && g.cameras.length > 0;
-				walk(g, cam, px, py, own ? g.cameras.contains(cam) : onCam);
+				final gc = g._cameras; // the cameras the group was given, not the default ones `cameras` falls back to
+				walk(g, cam, px, py, (gc != null && gc.length > 0) ? gc.contains(cam) : onCam);
 				continue;
 			}
 			final spr:FlxSprite = Std.isOfType(member, FlxSprite) ? cast member : null;
 			if (spr == null)
 				continue;
-			final own = spr.cameras != null && spr.cameras.length > 0;
-			if (!(own ? spr.cameras.contains(cam) : onCam))
+			final sc = spr._cameras;
+			if (!((sc != null && sc.length > 0) ? sc.contains(cam) : onCam))
 				continue;
 			if (spr.scrollFactor.x == 0 && spr.frames != null && Math.abs(spr.frameWidth * spr.scale.x) >= FlxG.width * 0.9)
 			{
