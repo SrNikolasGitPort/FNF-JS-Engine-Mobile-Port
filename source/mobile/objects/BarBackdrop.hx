@@ -59,12 +59,31 @@ class BarBackdrop extends FlxSprite
 		FlxG.cameras.list.remove(cam);
 		FlxG.cameras.list.unshift(cam); // keeps `cameras.list[last]` pointing at the state's own camera
 		FlxG.game.setChildIndex(cam.flashSprite, 0); // drawn under everything
+		FullScreenScaleMode.protect(cam);
 
+		coverBars(bg, px, py);
 		final copy = new BarBackdrop(bg, w, h);
 		copy.cameras = [cam];
 		state.insert(0, copy);
 		current = copy;
 		currentCam = cam;
+	}
+
+	/**
+	 * Enlarges the real background (around its own centre) until it reaches past the bars, so it simply
+	 * continues there: no seam, no second picture. The cameras no longer crop it at the 16:9 edge.
+	 */
+	static function coverBars(bg:FlxSprite, px:Int, py:Int):Void
+	{
+		final cx = bg.x + bg.width / 2;
+		final cy = bg.y + bg.height / 2;
+		final needW = 2 * Math.max(cx + px, FlxG.width + px - cx);
+		final needH = 2 * Math.max(cy + py, FlxG.height + py - cy);
+		final curW = Math.abs(bg.frameWidth * bg.scale.x); // the drawn size (width is only the hitbox)
+		final curH = Math.abs(bg.frameHeight * bg.scale.y);
+		final k = Math.max(1, Math.max(needW / Math.max(1, curW), needH / Math.max(1, curH)));
+		if (k > 1.001)
+			bg.scale.set(bg.scale.x * k, bg.scale.y * k); // origin is the centre and updateHitbox is not called: it grows in place
 	}
 
 	static var current:BarBackdrop;

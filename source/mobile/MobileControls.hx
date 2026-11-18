@@ -109,6 +109,9 @@ class MobileControls
 		// Full Screen: fill the area next to the game
 		try
 		{
+			if (instance != null)
+				for (c in [instance.camera, instance.rightBar, instance.leftBar])
+					FullScreenScaleMode.protect(c);
 			if (Std.isOfType(state, PlayState))
 				mobile.objects.BarBackdrop.fixFixedSprites(state, PlayState.instance.camGame);
 			else

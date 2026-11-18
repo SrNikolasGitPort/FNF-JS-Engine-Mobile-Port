@@ -10,6 +10,7 @@ import flixel.system.scaleModes.RatioScaleMode;
  * What changes is that the world camera of a song (`extend`) and a copy of each menu background (`BarBackdrop`)
  * are drawn over the area where the black bars would be.
  */
+@:access(flixel.FlxCamera)
 class FullScreenScaleMode extends RatioScaleMode
 {
 	/** Extra width / height (game pixels) on each side of the 1280x720 picture, 0 when it already fills the display. */
@@ -17,6 +18,9 @@ class FullScreenScaleMode extends RatioScaleMode
 	public static var padY(default, null):Int = 0;
 
 	static final cams:Array<FlxCamera> = [];
+	/** Cameras that must keep their own clipping (the touch controls, the side bars, the menu backdrop). */
+	static final keep:Array<FlxCamera> = [];
+	static var hooked:Bool = false;
 	static final doneX:Array<Int> = [];
 	static final doneY:Array<Int> = [];
 
@@ -28,6 +32,11 @@ class FullScreenScaleMode extends RatioScaleMode
 	override function onMeasure(Width:Int, Height:Int):Void
 	{
 		super.onMeasure(Width, Height);
+		if (!hooked)
+		{
+			hooked = true;
+			FlxG.signals.preDraw.add(unclipAll);
+		}
 		padX = Std.int(Math.max(0, Math.ceil((Width / scale.x - FlxG.width) / 2)));
 		padY = Std.int(Math.max(0, Math.ceil((Height / scale.y - FlxG.height) / 2)));
 		refresh();
@@ -73,6 +82,46 @@ class FullScreenScaleMode extends RatioScaleMode
 			cam.scroll.y += doneY[i] - padY;
 			doneX[i] = padX;
 			doneY[i] = padY;
+		}
+	}
+
+	/** The camera keeps cropping its picture to its own rectangle (used by the touch controls). */
+	public static function protect(cam:FlxCamera):Void
+	{
+		if (cam != null && !keep.contains(cam))
+			keep.push(cam);
+	}
+
+	/**
+	 * No invisible border: every camera crops what it draws to its 1280x720 rectangle, which is what cut
+	 * notes, icons and menu art at the edge of the picture. Before each draw the crop is widened by the
+	 * side padding on every side (positions and sizes are untouched), so whatever is drawn near the edge
+	 * simply continues into the area where the black bars would be.
+	 * It is set from the camera size each time (not added to), so it is safe to repeat and to undo (pad 0).
+	 */
+	static function unclipAll():Void
+	{
+		for (cam in FlxG.cameras.list)
+		{
+			if (cam == null || !cam.exists || keep.contains(cam) || cams.contains(cam))
+				continue;
+			final holder = cam._scrollRect;
+			if (holder == null)
+				continue;
+			final rect = holder.scrollRect;
+			if (rect == null || cam.width <= 0 || cam.height <= 0)
+				continue;
+			final baseW = cam.width * cam.initialZoom * FlxG.scaleMode.scale.x;
+			final baseH = cam.height * cam.initialZoom * FlxG.scaleMode.scale.y;
+			final ex = baseW * padX / cam.width;
+			final ey = baseH * padY / cam.height;
+			if (rect.x == -ex && rect.y == -ey && rect.width == baseW + ex * 2 && rect.height == baseH + ey * 2)
+				continue;
+			rect.x = -ex;
+			rect.y = -ey;
+			rect.width = baseW + ex * 2;
+			rect.height = baseH + ey * 2;
+			holder.scrollRect = rect;
 		}
 	}
 }
