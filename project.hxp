@@ -37,7 +37,7 @@ class Project extends HXProject
 	/**
 	 * The game's name. Used as the default window title.
 	 */
-	static final TITLE:String = "Friday Night Funkin': JS Engine";
+	static final TITLE:String = "FNF': JS Engine";
 
 	/**
 	 * The name of the generated executable file.
