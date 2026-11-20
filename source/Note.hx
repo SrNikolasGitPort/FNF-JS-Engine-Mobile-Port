@@ -103,7 +103,7 @@ class Note extends FlxSprite
 
 	public var animSuffix:String = '';
 	public var gfNote:Bool = false;
-	public var earlyHitMult:Float = 0.5;
+	public var earlyHitMult:Float = 1; // original value: early presses are judged by their real distance
 	public var lateHitMult:Float = 1;
 	public var lowPriority:Bool = false;
 

@@ -730,46 +730,8 @@ class PlayState extends MusicBeatState
 			startCharacterLua(gf.curCharacter);
 		}
 
-		var ratingQuoteStuff:Array<Dynamic> = Mods.mergeAllTextsNamed('data/ratingQuotes/${ClientPrefs.rateNameStuff}.txt', '', true);
-		if (ratingQuoteStuff == null || ratingQuoteStuff.indexOf(null) != -1){
-			trace('Failed to find quotes for ratings!');
-			// this should help fix a crash
-			ratingQuoteStuff = [
-				['How are you this bad?', 0.1],
-				['You Suck!', 0.2],
-				['Horribly Shit', 0.3],
-				['Shit', 0.4],
-				['Bad', 0.5],
-				['Bruh', 0.6],
-				['Meh', 0.69],
-				['Nice', 0.7],
-				['Good', 0.8],
-				['Great', 0.9],
-				['Sick!', 1],
-				['Perfect!!', 1]
-			];
-			ratingStuff = ratingQuoteStuff.copy();
-		}
-		else
-		{
-			for (i in 0...ratingQuoteStuff.length)
-			{
-				var quotes:Array<Dynamic> = ratingQuoteStuff[i].split(',');
-				if (quotes.length > 2) //In case your quote has more than 1 comma
-				{
-					var quotesToRemove:Int = 0;
-					for (i in 1...quotes.length-1)
-					{
-						quotesToRemove++;
-						quotes[0] += ',' + quotes[i];
-					}
-					if (quotesToRemove > 0)
-						quotes.splice(1, quotesToRemove);
-
-				}
-				ratingStuff.push(quotes);
-			}
-		}
+		// same loader as the original engine: the threshold is a number (it used to stay a String, which broke the name comparison)
+		ratingStuff = play.RatingQuotes.loadLegacy();
 
 		if (!ClientPrefs.charsAndBG)
 		{
