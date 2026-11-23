@@ -100,9 +100,18 @@ class AssetExtractor
 		if (bytes == null)
 			return;
 
-		// unchanged file: nothing to do
+		// unchanged file: nothing to do (same size is not enough: an update can change a value without changing the length)
 		if (FileSystem.exists(id) && FileSystem.stat(id).size == bytes.length)
-			return;
+		{
+			try
+			{
+				if (File.getBytes(id).compare(bytes) == 0)
+					return;
+			}
+			catch (e)
+			{
+			}
+		}
 
 		final folder = Path.directory(id);
 		if (folder != '' && !FileSystem.exists(folder))

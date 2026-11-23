@@ -24,6 +24,7 @@ class MobileInitState extends FlxState
 	var info:FlxText;
 	var skipFrames:Int = 2; // let one frame draw before the heavy work starts
 	var waitingForAccess:Bool = false;
+	var failed:Bool = false;
 	var accessTimer:Float = 0;
 	var asked:Bool = false;
 
@@ -95,7 +96,12 @@ class MobileInitState extends FlxState
 		}
 
 		if (extractor == null)
+		{
+			// setup failed (full disk, ...): a tap tries again instead of leaving only "force close"
+			if (failed && FlxG.touches.justStarted().length > 0)
+				FlxG.switchState(() -> new MobileInitState());
 			return;
+		}
 
 		if (skipFrames > 0)
 		{
@@ -113,8 +119,9 @@ class MobileInitState extends FlxState
 		{
 			title.text = "Something went wrong";
 			title.color = FlxColor.RED;
-			info.text = extractor.error;
+			info.text = extractor.error + '\n\nTap the screen to try again.';
 			info.color = FlxColor.WHITE;
+			failed = true;
 			extractor = null;
 		}
 		else if (extractor.finished)

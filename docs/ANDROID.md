@@ -75,3 +75,17 @@ The FPS / memory counter is kept away from the screen corner so notches and roun
 - **Haxe inside Lua**: `runHaxeCode`, `runHaxeFunction` and `addHaxeLibrary` work, and the usual classes (Math, Std, FlxColor, FlxMath, FlxText, FlxTrail, FlxBackdrop, Note, StrumNote, Song, File, FileSystem, Json...) are available without importing. `addHaxeLibrary` now also finds enums and warns on screen when a class does not exist in the build.
 - **Standalone Haxe scripts (`.hx`)**: put `foo.hx` anywhere a Lua script can go (scripts folders, `stages/<stage>.hx`, `custom_events/<event>.hx`, `custom_notetypes/<type>.hx`, `characters/<name>.hx`). If both `foo.lua` and `foo.hx` exist, the Lua one is used. The functions you define (`onCreate`, `onCreatePost`, `onUpdate`, `onBeatHit`, `onStepHit`, `onSpawnNote`, `onEvent`...) are called like Lua callbacks. Inside the script you use Haxe directly: `game` is the PlayState (so `game.boyfriend`, `game.camHUD`, `game.add(...)` work), plus `FlxG`, `FlxTween`, `Paths`, `Conductor`, `ClientPrefs`, `setVar` / `getVar`, and the classes listed above. The Lua helper functions (`makeLuaSprite`, `setProperty`...) are not callable from a `.hx` script.
 - Script errors show on screen in red instead of closing the song.
+
+## Shaders (.frag and .vert)
+
+Runtime shaders work the same in Lua and in Haxe scripts, on every phone:
+
+- Put them in `mods/<your mod>/shaders/` (or `mods/shaders/`, or `assets/shaders/`): `name.frag`, `name.vert`, or both. Only a `.vert` or only a `.frag` is fine.
+- Lua: `initLuaShader('name')`, then `setSpriteShader`, `setCameraShader`, `setShaderFloat`, `setShaderFloatArray`, `setShaderInt`, `setShaderBool`, `setShaderSampler2D`, ...
+- Haxe: `var sh = makeShader('name'); sprite.shader = sh;` (returns `null` and prints a red message if the shader is missing). `FlxRuntimeShader`, `ShaderFilter` and `ErrorHandledRuntimeShader` are available too.
+- Phones use OpenGL ES, which is stricter than a PC. The engine adapts shaders for you: `#version` lines are dropped and a fragment shader that has no `precision` line gets `precision mediump float;`. Shaders that start with `#pragma header` (the normal way) need nothing.
+- A shader that fails to compile does not crash the game: you get a message and a log in the `logs` folder.
+
+## Credits
+
+Mobile port by **Sr Naiko** (main porter, used a little AI for the port programming): https://youtube.com/@srnaikoxz

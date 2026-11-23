@@ -64,6 +64,9 @@ class MobileInput implements IFlxInputManager
 			return;
 		instance = new MobileInput();
 		FlxG.inputs.add(instance);
+		// the game runs with autoPause off, so FlxG.inputs never hears about the app being paused: without this a
+		// lane (or a sticky Ctrl) stays down after Home / a phone call
+		FlxG.signals.focusLost.add(releaseAll);
 
 		// ORDER MATTERS (this is input latency). `FlxG.inputs` updates its managers in list order, and the Controls
 		// action manager takes its snapshot of every button during its own update. When this manager ran after it,

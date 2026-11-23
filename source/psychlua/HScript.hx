@@ -86,6 +86,23 @@ class HScript
 			}
 		}
 
+		#if SHADERS_ALLOWED
+		// Haxe scripts: `var sh = makeShader('myShader'); sprite.shader = sh;` (reads mods/<mod>/shaders/myShader.frag and/or .vert)
+		interp.variables.set('ShaderLoader', shaders.ShaderLoader);
+		interp.variables.set('ErrorHandledRuntimeShader', shaders.ErrorHandledShader.ErrorHandledRuntimeShader);
+		interp.variables.set('makeShader', function(name:String):Dynamic
+		{
+			if (!ClientPrefs.shaders) return null;
+			final src = shaders.ShaderLoader.load(name);
+			if (src == null)
+			{
+				psychlua.LuaUtils.luaTrace(parentLua.lua, 'makeShader | shader "$name" not found (.frag / .vert)', true, false, FlxColor.RED);
+				return null;
+			}
+			return new shaders.ErrorHandledShader.ErrorHandledRuntimeShader(name, src[0], src[1]);
+		});
+		#end
+
 		interp.variables.set('setVar', function(name:String, value:Dynamic)
 		{
 			PlayState.instance.variables.set(name, value);

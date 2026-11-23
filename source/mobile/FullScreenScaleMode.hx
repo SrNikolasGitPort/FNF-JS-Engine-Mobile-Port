@@ -21,6 +21,7 @@ class FullScreenScaleMode extends RatioScaleMode
 	/** Cameras that must keep their own clipping (the touch controls, the side bars, the menu backdrop). */
 	static final keep:Array<FlxCamera> = [];
 	static var hooked:Bool = false;
+	static final applied:haxe.ds.ObjectMap<FlxCamera, Array<Float>> = new haxe.ds.ObjectMap();
 	static final doneX:Array<Int> = [];
 	static final doneY:Array<Int> = [];
 
@@ -88,6 +89,10 @@ class FullScreenScaleMode extends RatioScaleMode
 	/** The camera keeps cropping its picture to its own rectangle (used by the touch controls). */
 	public static function protect(cam:FlxCamera):Void
 	{
+		var i = keep.length;
+		while (i-- > 0) // forget cameras that are gone, so the list (searched every frame) stays tiny
+			if (keep[i] == null || !keep[i].exists)
+				keep.splice(i, 1);
 		if (cam != null && !keep.contains(cam))
 			keep.push(cam);
 	}
@@ -105,6 +110,24 @@ class FullScreenScaleMode extends RatioScaleMode
 		{
 			if (cam == null || !cam.exists || keep.contains(cam) || cams.contains(cam))
 				continue;
+			// flixel resets the crop whenever the size, zoom or scale changes: only look when one of those did
+			var sig = applied.get(cam);
+			if (sig == null)
+				applied.set(cam, sig = [-1.0, 0, 0, 0, 0, 0, 0, 0]);
+			final sx = FlxG.scaleMode.scale.x;
+			final sy = FlxG.scaleMode.scale.y;
+			final same = sig[0] == padX && sig[1] == padY && sig[2] == sx && sig[3] == sy && sig[4] == cam.zoom && sig[5] == cam.width
+				&& sig[6] == cam.height && sig[7] == cam.initialZoom;
+			if (same)
+				continue;
+			sig[0] = padX;
+			sig[1] = padY;
+			sig[2] = sx;
+			sig[3] = sy;
+			sig[4] = cam.zoom;
+			sig[5] = cam.width;
+			sig[6] = cam.height;
+			sig[7] = cam.initialZoom;
 			final holder = cam._scrollRect;
 			if (holder == null)
 				continue;
@@ -115,12 +138,18 @@ class FullScreenScaleMode extends RatioScaleMode
 			final baseH = cam.height * cam.initialZoom * FlxG.scaleMode.scale.y;
 			final ex = baseW * padX / cam.width;
 			final ey = baseH * padY / cam.height;
-			if (rect.x == -ex && rect.y == -ey && rect.width == baseW + ex * 2 && rect.height == baseH + ey * 2)
+			final hx = -0.5 * baseW - ex;
+			final hy = -0.5 * baseH - ey;
+			if (rect.x == -ex && rect.y == -ey && rect.width == baseW + ex * 2 && rect.height == baseH + ey * 2 && holder.x == hx && holder.y == hy)
 				continue;
 			rect.x = -ex;
 			rect.y = -ey;
 			rect.width = baseW + ex * 2;
 			rect.height = baseH + ey * 2;
+			// the crop rectangle also scrolls what is inside it: move the holder back by the same amount,
+			// otherwise the whole picture (HUD, strums) is pushed to the right/down by the padding
+			holder.x = hx;
+			holder.y = hy;
 			holder.scrollRect = rect;
 		}
 	}

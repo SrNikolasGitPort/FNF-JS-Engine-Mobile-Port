@@ -59,7 +59,8 @@ class MobileControls
 				if (!Std.isOfType(FlxG.scaleMode, FullScreenScaleMode))
 					FlxG.scaleMode = new FullScreenScaleMode();
 			default:
-				if (!Std.isOfType(FlxG.scaleMode, flixel.system.scaleModes.RatioScaleMode))
+				// exact class: FullScreenScaleMode is a RatioScaleMode too and has to be replaced
+				if (Type.getClass(FlxG.scaleMode) != flixel.system.scaleModes.RatioScaleMode)
 					FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode();
 		}
 	}
@@ -279,7 +280,23 @@ class MobileControls
 	function destroy():Void
 	{
 		FlxG.signals.preUpdate.remove(onPreUpdate);
-		// the objects are destroyed together with the state, the camera together with FlxG.cameras.reset()
+		// on a real state switch the objects go with the old state and the cameras with FlxG.cameras.reset();
+		// when the controls are rebuilt inside the same state (Screen option) they have to be removed by hand
+		if (state != null && state == FlxG.state)
+		{
+			for (obj in [cast pad, cast hitbox, cast keypad])
+			{
+				final o:flixel.FlxBasic = obj;
+				if (o != null)
+				{
+					state.remove(o, true);
+					o.destroy();
+				}
+			}
+			for (cam in [camera, rightBar, leftBar])
+				if (cam != null && FlxG.cameras.list.contains(cam))
+					FlxG.cameras.remove(cam, true);
+		}
 		pad = null;
 		hitbox = null;
 		keypad = null;
