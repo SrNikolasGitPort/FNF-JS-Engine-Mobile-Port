@@ -51,7 +51,7 @@ jobs:
         timeout-minutes: 90
         run: |
           rm -f assets/preload/gameRenders/renderlol.bat
-          haxelib run lime build ios -arm64 -release -nosign -D GITHUB_BUILD 2>&1 | tee build.log
+          haxelib run lime build ios -arm64 -release -nosign -D GITHUB_BUILD 2>&1
 
       - name: Make the IPA
         run: |

@@ -291,6 +291,8 @@ class Project extends HXProject
 				info('Target Platform: Linux');
 			case Platform.ANDROID:
 				info('Target Platform: Android');
+			case Platform.IOS:
+				info('Target Platform: iOS');
 			default:
 				error('Unsupported platform! (got ${target})');
 		}
