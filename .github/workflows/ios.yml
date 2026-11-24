@@ -77,6 +77,12 @@ jobs:
           echo "app: $APP"
           ENT=$(find build/release/ios -name "*.entitlements" | head -1)
           BIN="$APP/$(basename "$APP" .app)"
+          # make the Documents folder show up in the Files app (On My iPhone > the app), so mods can be copied in
+          PL="$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c "Delete :UIFileSharingEnabled" "$PL" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UIFileSharingEnabled bool true" "$PL"
+          /usr/libexec/PlistBuddy -c "Delete :LSSupportsOpeningDocumentsInPlace" "$PL" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PL"
           if [ -n "$ENT" ]; then ldid -S"$ENT" "$BIN"; else ldid -S "$BIN"; fi
           mkdir -p Payload && cp -R "$APP" Payload/
           zip -qr JS-iOS.ipa Payload
@@ -97,4 +103,4 @@ jobs:
               --notes "Unsigned iPhone/iPad build of the mobile port (fake-signed with ldid). Install with AltStore, Sideloadly or TrollStore. Not tested on a device yet."
           fi
           gh release upload MobilePort-iOS JS-iOS.ipa --clobber
-# rerun 7
+# rerun 8
