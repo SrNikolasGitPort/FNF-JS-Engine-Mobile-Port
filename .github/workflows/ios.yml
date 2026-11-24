@@ -45,7 +45,13 @@ jobs:
       # this Lime fork ships no prebuilt native libraries, so build them for the iPhone (arm64)
       - name: Rebuild Lime native libraries (iOS arm64)
         timeout-minutes: 60
-        run: haxelib run lime rebuild ios -arm64 -release
+        run: |
+          haxelib run lime rebuild ios -arm64 -release
+          cd .haxelib/lime/git/ndll/iPhone
+          ls -la
+          # the build step looks for the name without the architecture suffix
+          for f in liblime.iphoneos-arm64.a; do [ -f "$f" ] && cp "$f" liblime.iphoneos.a && cp "$f" liblime.iphoneos-64.a; done
+          ls -la
 
       - name: Build (iOS, no signing)
         timeout-minutes: 90
