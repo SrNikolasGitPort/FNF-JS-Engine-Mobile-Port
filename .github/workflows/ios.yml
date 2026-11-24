@@ -1,0 +1,67 @@
+name: iOS build
+
+# Builds an UNSIGNED iPhone/iPad app (.ipa) and fake-signs it with ldid so it can be sideloaded
+# (AltStore / Sideloadly / TrollStore). Runs by hand: Actions > iOS build > Run workflow.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mobile
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Install Haxe libraries
+        run: |
+          haxelib setup ~/haxelib
+          haxelib install hxcpp > /dev/null --quiet
+          haxelib install hxpkg --quiet
+          haxelib run hxpkg install --force
+
+      - name: Compile hxcpp tools
+        run: |
+          cd .haxelib/hxcpp/git/tools/run
+          haxe compile.hxml
+          cd ..
+          cd ./hxcpp
+          haxe compile.hxml
+          cd ../../../../..
+
+      # this Lime fork ships no prebuilt native libraries, so build them for the iPhone (arm64)
+      - name: Rebuild Lime native libraries (iOS arm64)
+        timeout-minutes: 60
+        run: haxelib run lime rebuild ios -arm64 -release
+
+      - name: Build (iOS, no signing)
+        timeout-minutes: 90
+        run: |
+          rm -f assets/preload/gameRenders/renderlol.bat
+          haxelib run lime build ios -arm64 -release -nosign -D GITHUB_BUILD 2>&1 | tee build.log
+
+      - name: Make the IPA
+        run: |
+          brew install ldid
+          APP=$(find export/release/ios -name "*.app" -maxdepth 6 | head -1)
+          echo "app: $APP"
+          ENT=$(find export/release/ios -name "*.entitlements" | head -1)
+          BIN="$APP/$(basename "$APP" .app)"
+          if [ -n "$ENT" ]; then ldid -S"$ENT" "$BIN"; else ldid -S "$BIN"; fi
+          mkdir -p Payload && cp -R "$APP" Payload/
+          zip -qr JS-iOS.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JS-iOS
+          path: JS-iOS.ipa
+          if-no-files-found: error

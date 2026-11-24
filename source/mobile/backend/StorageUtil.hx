@@ -28,6 +28,9 @@ class StorageUtil
 	/** Call first thing at startup, before anything touches the file system. */
 	public static function init():Void
 	{
+		#if ios
+		setup(true);
+		#end
 		#if android
 		// until the permission is granted the app's own folder is the working directory (crash logs etc.)
 		setup(hasAccess());
@@ -69,6 +72,14 @@ class StorageUtil
 	/** Picks the game folder (shared storage when `shared`), creates it and makes it the working directory. */
 	public static function setup(shared:Bool):Void
 	{
+		#if ios
+		// iPhone/iPad: the app's Documents folder (shows in the Files app, "On My iPhone > FNF JS Engine")
+		directory = Path.addTrailingSlash(Path.addTrailingSlash(lime.system.System.documentsDirectory) + 'JSEMobile');
+		for (folder in [directory, directory + 'mods', directory + 'crash'])
+			if (!FileSystem.exists(folder))
+				try FileSystem.createDirectory(folder) catch (e) {}
+		try Sys.setCwd(directory) catch (e) {}
+		#end
 		#if android
 		directory = '';
 		if (shared)

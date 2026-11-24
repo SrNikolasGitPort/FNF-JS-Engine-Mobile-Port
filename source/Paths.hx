@@ -850,7 +850,7 @@ class Paths
   {
     // Android: Lime/SDL open a RELATIVE path inside the APK's assets, so files that only exist in the
     // mods folder (images, music, fonts, videos) would never be found. An absolute path goes to the real file.
-    #if android
+    #if (android || ios)
     return mobile.backend.StorageUtil.directory + 'mods/' + key;
     #else
     return 'mods/' + key;
