@@ -4,6 +4,10 @@ name: iOS build
 # (AltStore / Sideloadly / TrollStore). Runs by hand: Actions > iOS build > Run workflow.
 on:
   workflow_dispatch:
+  # also runs when this file changes, so the build can be started from the mobile branch
+  push:
+    branches: [mobile]
+    paths: ['.github/workflows/ios.yml']
 
 concurrency:
   group: ios-build-${{ github.ref }}
