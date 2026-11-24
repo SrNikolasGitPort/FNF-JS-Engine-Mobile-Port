@@ -70,9 +70,9 @@ jobs:
       - name: Make the IPA
         run: |
           brew install ldid
-          APP=$(find export/release/ios -name "*.app" -maxdepth 6 | head -1)
+          APP=$(find build/release/ios -name "*.app" -maxdepth 6 | head -1)
           echo "app: $APP"
-          ENT=$(find export/release/ios -name "*.entitlements" | head -1)
+          ENT=$(find build/release/ios -name "*.entitlements" | head -1)
           BIN="$APP/$(basename "$APP" .app)"
           if [ -n "$ENT" ]; then ldid -S"$ENT" "$BIN"; else ldid -S "$BIN"; fi
           mkdir -p Payload && cp -R "$APP" Payload/
@@ -83,4 +83,4 @@ jobs:
           name: JS-iOS
           path: JS-iOS.ipa
           if-no-files-found: error
-# rerun 5
+# rerun 6
