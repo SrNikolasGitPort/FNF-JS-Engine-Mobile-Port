@@ -53,6 +53,14 @@ jobs:
           for f in liblime.iphoneos-arm64.a; do [ -f "$f" ] && cp "$f" liblime.iphoneos.a && cp "$f" liblime.iphoneos-64.a; done
           ls -la
 
+      # newer hxcpp names the arm64 library ...iphoneos-arm64.a while this Lime fork's Xcode template still expects
+      # ...iphoneos-64.a, so point the template at the new name
+      - name: Patch Lime iOS template
+        run: |
+          grep -rln "iphoneos-64" .haxelib/lime/git/templates 2>/dev/null | while read f; do
+            echo "patching $f"; sed -i '' 's/iphoneos-64\.a/iphoneos-arm64.a/g' "$f"
+          done
+
       - name: Build (iOS, no signing)
         timeout-minutes: 90
         run: |
@@ -75,4 +83,4 @@ jobs:
           name: JS-iOS
           path: JS-iOS.ipa
           if-no-files-found: error
-# rerun 3
+# rerun 4
