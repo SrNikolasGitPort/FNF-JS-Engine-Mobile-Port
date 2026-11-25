@@ -38,7 +38,7 @@ permissions:
   contents: write
 
 env:
-  RELEASE_NAME: FNF JS Engine Mobile Port
+  RELEASE_NAME: "FNF': JS Engine - Mobile Port (Android + iOS)"
   APK_NAME: JS-Android.apk
 
 concurrency:
@@ -237,8 +237,15 @@ jobs:
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           files: out/${{ env.APK_NAME }}
           body: |
-            **FNF JS Engine Mobile Port** (Android)
+            **FNF': JS Engine - Mobile Port**
 
+            **Android** - `JS-Android.apk`
             - One APK for every phone: 32-bit (armeabi-v7a) and 64-bit (arm64-v8a). Android 6.0+.
             - First launch copies the game files out of the APK (about a minute), after that it opens fast.
-            - Put your mods in `Android/data/com.JordanSantiago.JSEngine/files/mods/`.
+            - Mods go in `/storage/emulated/0/.JSEMobile/mods/`.
+
+            **iPhone / iPad** - `JS-iOS.ipa` (unsigned, install with AltStore, Sideloadly or TrollStore)
+            - Mods go in the Files app: On My iPhone > FNF': JS Engine > JSEMobile > mods.
+            - Built from the same source; not tested on every device yet.
+
+            Credits: Sr Naiko (main porter) - https://youtube.com/@srnaikoxz

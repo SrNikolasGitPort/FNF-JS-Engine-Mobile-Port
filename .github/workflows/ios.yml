@@ -93,14 +93,15 @@ jobs:
           path: JS-iOS.ipa
           if-no-files-found: error
 
-      # a public download link (the artifact above needs a GitHub login)
-      - name: Publish the IPA to the MobilePort-iOS release
+      # same release as the APK (MobilePort), so both files are downloaded from one page
+      - name: Add the IPA to the MobilePort release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view MobilePort-iOS >/dev/null 2>&1; then
-            gh release create MobilePort-iOS --target mobile --title "FNF': JS Engine - iOS (unsigned IPA)" \
-              --notes "Unsigned iPhone/iPad build of the mobile port (fake-signed with ldid). Install with AltStore, Sideloadly or TrollStore. Not tested on a device yet."
-          fi
-          gh release upload MobilePort-iOS JS-iOS.ipa --clobber
-# rerun 8
+          # the Android build creates the release; wait for it if this build finished first
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            gh release view MobilePort >/dev/null 2>&1 && break
+            sleep 30
+          done
+          gh release upload MobilePort JS-iOS.ipa --clobber
+# rerun 9
