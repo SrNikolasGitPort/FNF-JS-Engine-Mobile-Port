@@ -206,8 +206,24 @@ class Paths
       }
     }
     // run the garbage collector for good measure lmfao
-    compress();
+    collectGarbage();
+  }
+
+  static var lastCollect:Float = -100;
+
+  /**
+   * A full collection + compaction takes about half a second on a phone, and the menus call clearStoredMemory() and
+   * clearUnusedMemory() one right after the other (Options took ~1 s to open because of that). A second collection
+   * within a short time frees almost nothing, so it is skipped.
+   */
+  static function collectGarbage():Void
+  {
+    final now = haxe.Timer.stamp();
+    if (now - lastCollect < 0.75)
+      return;
     gc(true);
+    compress();
+    lastCollect = haxe.Timer.stamp();
   }
 
   // define the locally tracked assets
@@ -234,8 +250,7 @@ class Paths
     // flags everything to be cleared out next unused memory clear
     localTrackedAssets = [];
     #if !html5 openfl.Assets.cache.clear("songs"); #end
-    gc(true);
-    compress();
+    collectGarbage();
   }
 
   inline static function destroyGraphic(graphic:FlxGraphic)

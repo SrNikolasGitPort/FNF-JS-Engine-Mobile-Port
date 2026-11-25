@@ -244,6 +244,8 @@ class MobileControls
 			game.setChildIndex(leftBar.flashSprite, top - 1);
 		}
 
+		keepPadDrawn();
+
 		if (hitbox == null)
 		{
 			final padOn = !touchOnly;
@@ -270,6 +272,33 @@ class MobileControls
 			pad.setActive(showPad);
 		if (showPad || touchOnly)
 			MobileInput.releaseAll(); // do not carry a held lane into the menu / dialogue
+	}
+
+	var drawnBy:FlxState;
+
+	/**
+	 * Game over (and a few other sub menus) stop the state from being drawn (persistentDraw = false), and the buttons are
+	 * members of the state: they vanished exactly when the A/B buttons are needed. While such a sub menu is open the
+	 * pad is handed to it, and given back when it closes.
+	 */
+	function keepPadDrawn():Void
+	{
+		if (pad == null || state == null)
+			return;
+		final sub = state.subState;
+		if (drawnBy != null && drawnBy != sub)
+		{
+			drawnBy.remove(pad, true);
+			drawnBy = null;
+			if (state.members.indexOf(pad) < 0)
+				state.add(pad);
+		}
+		if (sub != null && !state.persistentDraw && drawnBy == null)
+		{
+			state.remove(pad, true);
+			sub.add(pad);
+			drawnBy = sub;
+		}
 	}
 
 	/** Rebuilds the buttons of the state on screen (the screen mode changed, so the visible area did). */
