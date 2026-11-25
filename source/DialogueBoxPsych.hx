@@ -273,6 +273,16 @@ class DialogueBoxPsych extends FlxSpriteGroup
 	{
 		if(ignoreThisFrame) {
 			ignoreThisFrame = false;
+			// the first line is laid out before the dialogue is on screen: lay it out again now, the same way every
+			// later line is (this is what the first line was missing: wrong size/position)
+			if(daText != null) {
+				var firstText:String = daText.text;
+				daText.setScale(0.7, 0.7);
+				daText.text = firstText;
+				daText.x = DEFAULT_TEXT_X;
+				daText.y = DEFAULT_TEXT_Y;
+				if(daText.rows > 2) daText.y -= LONG_TEXT_ADD;
+			}
 			super.update(elapsed);
 			return;
 		}
@@ -281,7 +291,7 @@ class DialogueBoxPsych extends FlxSpriteGroup
 			bgFade.alpha += 0.5 * elapsed;
 			if(bgFade.alpha > 0.5) bgFade.alpha = 0.5;
 
-			if(PlayerSettings.player1.controls.ACCEPT) {
+			if(PlayerSettings.player1.controls.ACCEPT #if mobile || FlxG.touches.justStarted().length > 0 #end) { // on a phone a tap anywhere advances
 				if(!daText.finishedText) {
 					daText.finishText();
 					if(skipDialogueThing != null) {

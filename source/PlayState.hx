@@ -2942,6 +2942,8 @@ class PlayState extends MusicBeatState
 		// dialogue/cutscenes need A/B, so they get the pad instead of the hitbox
 		if (mobile.MobileControls.instance != null)
 			mobile.MobileControls.instance.cutsceneMode = inCutscene;
+		if (mobile.MobileControls.instance != null)
+			mobile.MobileControls.instance.touchOnly = psychDialogue != null;
 		#end
 		grpCrossFade.update(elapsed);
 		grpCrossFade.forEachDead(function(img:CrossFade)

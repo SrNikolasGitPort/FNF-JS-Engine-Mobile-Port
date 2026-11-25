@@ -25,8 +25,20 @@ class MusicBeatSubstate extends FlxSubState
 	inline function get_controls():Controls
 		return PlayerSettings.player1.controls;
 
+	#if mobile
+	var barsChecked:Bool = false;
+	#end
+
 	override function update(elapsed:Float)
 	{
+		#if mobile
+		// Full Screen: flat overlays of this sub menu are widened once its sprites exist (the first update)
+		if (!barsChecked)
+		{
+			barsChecked = true;
+			try mobile.objects.BarBackdrop.widenFlat(this) catch (e) {}
+		}
+		#end
 		if (oldStep != curStep) oldStep = curStep;
 
 		updateCurStep();

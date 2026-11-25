@@ -546,7 +546,7 @@ class Paths
  		if (!warnedMissingAssets.exists(file))
 		{
 			warnedMissingAssets.set(file, true);
-			trace('oh no its returning null NOOOO ($file)');
+			// (log removed: it ran for every missing file probe, which is slow on a phone)
 		}
 		return null;
       }
@@ -840,7 +840,7 @@ class Paths
       return sound;
     }
 
-    trace('oh no its returning null NOOOO ($file)');
+    // (log removed: it ran for every missing file probe, which is slow on a phone)
     return null;
   }
 

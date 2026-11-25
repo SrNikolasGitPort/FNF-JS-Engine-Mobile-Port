@@ -38,8 +38,12 @@ class MobileControls
 	/** Set by gameplay while a cutscene / dialogue is running: shows the pad instead of the hitbox. */
 	public var cutsceneMode:Bool = false;
 
+	/** A dialogue is running: no buttons at all, a tap on the screen advances it. */
+	public var touchOnly:Bool = false;
+
 	var state:FlxState;
 	var lastShowPad:Null<Bool> = null;
+	var lastMode:Int = -1;
 
 	/** Applies the "Screen" option: keep 16:9 with black bars (Ratio) or stretch to the whole display (Fill). */
 	public static function applyScaleMode():Void
@@ -242,24 +246,30 @@ class MobileControls
 
 		if (hitbox == null)
 		{
-			if (pad != null && lastShowPad != true)
+			final padOn = !touchOnly;
+			if (pad != null && lastShowPad != padOn)
 			{
-				lastShowPad = true;
-				pad.setActive(true);
+				lastShowPad = padOn;
+				pad.setActive(padOn);
+				if (!padOn)
+					MobileInput.releaseAll();
 			}
 			return;
 		}
 
-		final showPad = substateOpen() || cutsceneMode;
-		if (showPad == lastShowPad)
+		final showPad = !touchOnly && (substateOpen() || cutsceneMode);
+		final showHitbox = !touchOnly && !showPad;
+		final mode = touchOnly ? 2 : (showPad ? 1 : 0);
+		if (mode == lastMode)
 			return;
+		lastMode = mode;
 		lastShowPad = showPad;
 
-		hitbox.setActive(!showPad);
+		hitbox.setActive(showHitbox);
 		if (pad != null)
 			pad.setActive(showPad);
-		if (showPad)
-			MobileInput.releaseAll(); // do not carry a held lane into the menu
+		if (showPad || touchOnly)
+			MobileInput.releaseAll(); // do not carry a held lane into the menu / dialogue
 	}
 
 	/** Rebuilds the buttons of the state on screen (the screen mode changed, so the visible area did). */

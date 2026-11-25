@@ -142,8 +142,19 @@ mobilePadMode = RESETTABLE;
     super.create();
   }
 
+  // the option list lives on subCamera, which is drawn ABOVE the camera the sub menus use: without this the
+  // Options entries show through the sub menu (very visible in Mobile Options)
+  override function openSubState(SubState:flixel.FlxSubState)
+  {
+    if (subCamera != null)
+      subCamera.visible = false;
+    super.openSubState(SubState);
+  }
+
   override function closeSubState()
   {
+    if (subCamera != null)
+      subCamera.visible = true;
     super.closeSubState();
     ClientPrefs.saveSettings();
     FlxG.mouse.visible = false;

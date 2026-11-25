@@ -47,6 +47,7 @@ class BarBackdrop extends FlxSprite
 		final py = FullScreenScaleMode.padY;
 		if (!FullScreenScaleMode.active || (px <= 0 && py <= 0))
 			return;
+		widenFlat(state);
 		final bg = findBackground(state);
 		if (bg == null)
 			return;
@@ -84,6 +85,55 @@ class BarBackdrop extends FlxSprite
 		final k = Math.max(1, Math.max(needW / Math.max(1, curW), needH / Math.max(1, curH)));
 		if (k > 1.001)
 			bg.scale.set(bg.scale.x * k, bg.scale.y * k); // origin is the centre and updateHitbox is not called: it grows in place
+	}
+
+	static final solidKey:EReg = ~/^\d+x\d+:/;
+
+	/**
+	 * Flat colour bars and dim overlays that span the whole screen (the yellow band of Story Mode, the dark layer behind
+	 * menus and the pause screen...) end exactly at the edge of the 16:9 picture, which shows up as a cut in the
+	 * side areas. Stretching a plain colour is invisible, so those are widened to reach past the edges.
+	 * Called for every state and sub menu (once their sprites exist); safe to call again.
+	 */
+	public static function widenFlat(group:FlxGroup):Void
+	{
+		final px = FullScreenScaleMode.padX;
+		final py = FullScreenScaleMode.padY;
+		if (!FullScreenScaleMode.active || (px <= 0 && py <= 0))
+			return;
+		for (member in group.members)
+		{
+			if (member == null || !member.exists)
+				continue;
+			if (Std.isOfType(member, FlxGroup))
+			{
+				widenFlat(cast member);
+				continue;
+			}
+			final spr:FlxSprite = Std.isOfType(member, FlxSprite) ? cast member : null;
+			if (spr == null || spr.frames == null || spr.scrollFactor.x != 0 || spr.scrollFactor.y != 0 || spr.graphic == null
+				|| spr.graphic.key == null || !solidKey.match(spr.graphic.key) || Std.isOfType(spr, flixel.text.FlxText))
+				continue;
+			final cam = spr.camera;
+			if (cam == null || cam.width != FlxG.width) // only sprites on a normal 1280-wide camera
+				continue;
+			final w = Math.abs(spr.frameWidth * spr.scale.x);
+			final h = Math.abs(spr.frameHeight * spr.scale.y);
+			if (px > 0 && w >= FlxG.width * 0.95)
+			{
+				final cx = spr.x + spr.width / 2;
+				final need = 2 * Math.max(cx + px, FlxG.width + px - cx);
+				if (need > w * 1.001)
+					spr.scale.x *= need / w;
+			}
+			if (py > 0 && h >= FlxG.height * 0.95)
+			{
+				final cy = spr.y + spr.height / 2;
+				final need = 2 * Math.max(cy + py, FlxG.height + py - cy);
+				if (need > h * 1.001)
+					spr.scale.y *= need / h;
+			}
+		}
 	}
 
 	static var current:BarBackdrop;
