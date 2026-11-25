@@ -148,8 +148,7 @@ class Conductor
 			totalSteps += deltaSteps;
 			totalPos += ((60 / curBPM) * 1000 / 4) * deltaSteps;
 		}
-		if (bpmChangeMap.length > 0)
-			// (log removed: printed the whole BPM map on every song load)
+		// (log of the whole BPM map removed: it was printed on every song load)
 	}
 
 	static function getSectionBeats(song:SwagSong, section:Int)
